@@ -1,0 +1,27 @@
+# ===== Credenciales (NO subir) =====
+.env
+*.env
+!.env.example
+
+# ===== Build =====
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ===== IDE =====
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.classpath
+.project
+.settings
+
+# ===== Sistema Operativo =====
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+*.log
