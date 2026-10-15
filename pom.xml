@@ -23,6 +23,18 @@
     </properties>
     
     <dependencies>
+        <!-- Flyway: Starter oficial de Spring Boot -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+
+        <!-- Flyway: Soporte para PostgreSQL -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
         <!-- Web (Spring MVC + Tomcat + Jackson) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
