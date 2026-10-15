@@ -1,0 +1,5 @@
+name: SAESU Local
+values:
+  - key: token
+    secret: true
+color: 300

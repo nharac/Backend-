@@ -1,0 +1,17 @@
+$kind: http-request
+name: http://localhost:8080/api/auth/registro
+description: ""
+url: http://localhost:8080/api/auth/registro
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"nombre\": \"Maria Lopez\",\r
+
+    \  \"correo\": \"maria3@test.com\",\r
+
+    \  \"password\": \"miPassword123\"\r
+
+    }"
+order: 1000
