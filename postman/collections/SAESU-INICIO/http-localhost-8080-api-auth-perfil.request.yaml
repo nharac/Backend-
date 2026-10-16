@@ -6,5 +6,5 @@ method: GET
 auth:
   type: bearer
   credentials:
-    token: "   {{json_web_token_13zv}}"
+    token: "{{token}}"
 order: 3000

@@ -1,4 +1,11 @@
 $kind: http-request
-url: ""
-method: GET
+url: http://localhost:8080/api/practica/preguntas/2/responder
+method: POST
+body:
+  type: json
+  content: "{\r\n  \"opcionId\": 5\r\n}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
 order: 7000

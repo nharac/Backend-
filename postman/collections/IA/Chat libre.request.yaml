@@ -1,0 +1,15 @@
+$kind: http-request
+url: http://localhost:8080/api/chat/mensaje
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"mensaje\": \"No entiendo cómo empezar a derivar f(x) = x² + 3x\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 1000

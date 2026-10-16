@@ -1,4 +1,11 @@
 $kind: http-request
-url: ""
+url: http://localhost:8080/api/practica/preguntas?tema=derivadas&dificultad=basico
 method: GET
+queryParams:
+  tema: derivadas
+  dificultad: basico
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
 order: 3000
