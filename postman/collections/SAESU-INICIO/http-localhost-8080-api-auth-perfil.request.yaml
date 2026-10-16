@@ -1,0 +1,10 @@
+$kind: http-request
+name: http://localhost:8080/api/auth/perfil
+description: ""
+url: http://localhost:8080/api/auth/perfil
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 3000

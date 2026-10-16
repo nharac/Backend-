@@ -1,0 +1,11 @@
+$kind: http-request
+url: http://localhost:8080/api/practica/preguntas?page=1&size=3
+method: GET
+queryParams:
+  page: "1"
+  size: "3"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 4000

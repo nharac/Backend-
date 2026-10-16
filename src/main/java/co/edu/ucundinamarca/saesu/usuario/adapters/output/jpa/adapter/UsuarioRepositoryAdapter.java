@@ -25,6 +25,11 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
     }
 
     @Override
+    public Optional<Usuario> buscarPorId(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
     public Usuario guardar(Usuario usuario) {
         return mapper.toDomain(repository.save(mapper.toEntity(usuario)));
     }

@@ -1,0 +1,8 @@
+$kind: http-request
+url: http://localhost:8080/api/practica/preguntas/1/pista
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 5000
