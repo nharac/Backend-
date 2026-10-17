@@ -9,6 +9,7 @@ import co.edu.ucundinamarca.saesu.usuario.ports.input.ObtenerPerfilUseCase;
 import co.edu.ucundinamarca.saesu.usuario.ports.input.RegistrarUsuarioUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid; //  Importamos Valid
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -42,7 +43,8 @@ public class AuthController {
             description = "Crea un nuevo usuario con rol ESTUDIANTE. Devuelve el usuario creado y un JWT."
     )
     @PostMapping("/registro")
-    public ResponseEntity<AuthResponse> registro(@RequestBody RegistroRequest request) {
+    public ResponseEntity<AuthResponse> registro(@Valid @RequestBody RegistroRequest request) {
+        // Agregamos @Valid arriba ^^^
         return ResponseEntity.status(HttpStatus.CREATED).body(registrarUsuarioUseCase.registrar(request));
     }
 
@@ -51,7 +53,8 @@ public class AuthController {
             description = "Autentica un usuario (estudiante o docente) y devuelve un JWT."
     )
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        // Agregamos @Valid arriba ^^^
         return ResponseEntity.ok(loginUseCase.login(request));
     }
 

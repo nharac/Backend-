@@ -1,19 +1,12 @@
 
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  saesu-backend:
+    build: .
     container_name: saesu-backend
-    restart: unless-stopped
-    env_file:
-      - .env
     ports:
       - "8080:8080"
-    networks:
-      - saesu-network
-
-networks:
-  saesu-network:
-    name: saesu-network
-    driver: bridge
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: unless-stopped

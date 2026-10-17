@@ -29,4 +29,9 @@ public interface PublicacionRepositoryPort {
      * Guarda una publicación.
      */
     Publicacion guardar(Publicacion publicacion);
+    
+        /**
+     * Elimina una publicación por ID.
+     */
+    void eliminar(Long id);
 }

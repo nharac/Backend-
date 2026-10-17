@@ -40,7 +40,8 @@ public class CrearPublicacionService implements CrearPublicacionUseCase {
                 request.getContenido().trim(),
                 request.getTema(),
                 LocalDateTime.now(),
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                true
         );
 
         // 3. Guardar

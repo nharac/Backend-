@@ -74,4 +74,13 @@ public class PublicacionRepositoryAdapter implements PublicacionRepositoryPort {
         // "reciente" y "respuestas" usan fecha DESC como base
         return Sort.by(Sort.Direction.DESC, "fechaCreacion");
     }
+
+    // AQUÍ ESTÁ EL CAMBIO: Buscamos, ponemos activa=false y guardamos.
+    @Override
+    public void eliminar(Long id) {
+        jpaRepository.findById(id).ifPresent(publicacion -> {
+            publicacion.setActiva(false); // Lo ocultamos
+            jpaRepository.save(publicacion); // Guardamos el cambio
+        });
+    }
 }

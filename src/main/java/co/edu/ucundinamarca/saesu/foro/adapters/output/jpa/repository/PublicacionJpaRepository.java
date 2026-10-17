@@ -23,7 +23,8 @@ public interface PublicacionJpaRepository extends JpaRepository<PublicacionEntit
     @Query("""
         SELECT DISTINCT p FROM PublicacionEntity p
         LEFT JOIN FETCH p.autor
-        WHERE (CAST(:tema AS string) IS NULL OR p.tema = :tema)
+        WHERE p.activa = true
+          AND (CAST(:tema AS string) IS NULL OR p.tema = :tema)
           AND (CAST(:busqueda AS string) IS NULL
                OR LOWER(p.titulo) LIKE LOWER(CONCAT('%', CAST(:busqueda AS string), '%'))
                OR LOWER(p.contenido) LIKE LOWER(CONCAT('%', CAST(:busqueda AS string), '%')))
@@ -39,7 +40,8 @@ public interface PublicacionJpaRepository extends JpaRepository<PublicacionEntit
      */
     @Query("""
         SELECT COUNT(p) FROM PublicacionEntity p
-        WHERE (CAST(:tema AS string) IS NULL OR p.tema = :tema)
+        WHERE p.activa = true
+          AND (CAST(:tema AS string) IS NULL OR p.tema = :tema)
           AND (CAST(:busqueda AS string) IS NULL
                OR LOWER(p.titulo) LIKE LOWER(CONCAT('%', CAST(:busqueda AS string), '%'))
                OR LOWER(p.contenido) LIKE LOWER(CONCAT('%', CAST(:busqueda AS string), '%')))
