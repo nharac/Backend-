@@ -1,24 +1,22 @@
 package co.edu.ucundinamarca.saesu.usuario.adapters.input.rest;
 
+import co.edu.ucundinamarca.saesu.core.security.service.JwtService;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.LoginRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.RegistroRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.AuthResponse;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.UsuarioResponse;
+import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
 import co.edu.ucundinamarca.saesu.usuario.ports.input.LoginUseCase;
 import co.edu.ucundinamarca.saesu.usuario.ports.input.ObtenerPerfilUseCase;
 import co.edu.ucundinamarca.saesu.usuario.ports.input.RegistrarUsuarioUseCase;
+import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid; //  Importamos Valid
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,13 +27,20 @@ public class AuthController {
     private final RegistrarUsuarioUseCase registrarUsuarioUseCase;
     private final LoginUseCase loginUseCase;
     private final ObtenerPerfilUseCase obtenerPerfilUseCase;
+    // NUEVAS DEPENDENCIAS
+    private final JwtService jwtService;
+    private final UsuarioRepositoryPort usuarioRepository;
 
     public AuthController(RegistrarUsuarioUseCase registrarUsuarioUseCase,
                           LoginUseCase loginUseCase,
-                          ObtenerPerfilUseCase obtenerPerfilUseCase) {
+                          ObtenerPerfilUseCase obtenerPerfilUseCase,
+                          JwtService jwtService,
+                          UsuarioRepositoryPort usuarioRepository) {
         this.registrarUsuarioUseCase = registrarUsuarioUseCase;
         this.loginUseCase = loginUseCase;
         this.obtenerPerfilUseCase = obtenerPerfilUseCase;
+        this.jwtService = jwtService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Operation(
@@ -44,7 +49,6 @@ public class AuthController {
     )
     @PostMapping("/registro")
     public ResponseEntity<AuthResponse> registro(@Valid @RequestBody RegistroRequest request) {
-        // Agregamos @Valid arriba ^^^
         return ResponseEntity.status(HttpStatus.CREATED).body(registrarUsuarioUseCase.registrar(request));
     }
 
@@ -54,7 +58,6 @@ public class AuthController {
     )
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        // Agregamos @Valid arriba ^^^
         return ResponseEntity.ok(loginUseCase.login(request));
     }
 
@@ -65,5 +68,25 @@ public class AuthController {
     @GetMapping("/perfil")
     public ResponseEntity<UsuarioResponse> perfil(Authentication authentication) {
         return ResponseEntity.ok(obtenerPerfilUseCase.obtenerPerfil(authentication.getName()));
+    }
+
+    @Operation(summary = "Refrescar Token", description = "Obtiene un nuevo JWT usando un Refresh Token válido.")
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestParam String refreshToken) {
+        if (!jwtService.validarToken(refreshToken) || !jwtService.esRefreshToken(refreshToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String correo = jwtService.extraerCorreo(refreshToken);
+        Usuario usuario = usuarioRepository.buscarPorCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        String nuevoToken = jwtService.generarToken(usuario.getCorreo(), usuario.getRol());
+        
+        return ResponseEntity.ok(new AuthResponse(
+                new UsuarioResponse(usuario.getId(), usuario.getNombre(), usuario.getCorreo(), usuario.getRol(), usuario.getFechaRegistro()),
+                nuevoToken,
+                refreshToken // Devolvemos el mismo refresh token
+        ));
     }
 }

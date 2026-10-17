@@ -42,9 +42,13 @@ public class RegistrarUsuarioService implements RegistrarUsuarioUseCase {
         nuevo.setFechaRegistro(LocalDateTime.now());
 
         Usuario guardado = usuarioRepository.guardar(nuevo);
+        
+        // Generamos ambos tokens
         String token = jwtService.generarToken(guardado.getCorreo(), guardado.getRol());
+        String refreshToken = jwtService.generarRefreshToken(guardado.getCorreo()); 
 
-        return new AuthResponse(mapearAResponse(guardado), token);
+        // Retornamos los 3 parámetros
+        return new AuthResponse(mapearAResponse(guardado), token, refreshToken); 
     }
 
     private UsuarioResponse mapearAResponse(Usuario u) {
