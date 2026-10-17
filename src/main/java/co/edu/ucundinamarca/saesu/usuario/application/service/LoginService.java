@@ -36,7 +36,9 @@ public class LoginService implements LoginUseCase {
         }
 
         String token = jwtService.generarToken(usuario.getCorreo(), usuario.getRol());
-        return new AuthResponse(mapearAResponse(usuario), token);
+        String refreshToken = jwtService.generarRefreshToken(usuario.getCorreo()); 
+        
+        return new AuthResponse(mapearAResponse(usuario), token, refreshToken); // <-- refreshToken
     }
 
     private UsuarioResponse mapearAResponse(Usuario u) {
