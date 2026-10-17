@@ -24,4 +24,5 @@ public class Publicacion {
     private String tema;       // limites, derivadas, integrales (o null)
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
+    private Boolean activa;
 }

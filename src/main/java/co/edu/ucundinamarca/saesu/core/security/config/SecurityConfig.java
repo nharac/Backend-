@@ -1,6 +1,7 @@
 package co.edu.ucundinamarca.saesu.core.security.config;
 
 import co.edu.ucundinamarca.saesu.core.security.filter.JwtAuthenticationFilter;
+import co.edu.ucundinamarca.saesu.core.security.filter.RateLimitFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -21,9 +22,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+    private final RateLimitFilter rateLimitFilter; // NUevo filtro de limitación 
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter, RateLimitFilter rateLimitFilter) {
         this.jwtFilter = jwtFilter;
+        this.rateLimitFilter = rateLimitFilter;
     }
 
     @Bean
@@ -33,18 +36,17 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos de autenticación
                 .requestMatchers("/api/auth/registro", "/api/auth/login").permitAll()
-                // Swagger / OpenAPI - público
                 .requestMatchers(
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
                         "/api-docs/**"
                 ).permitAll()
-                // Todo lo demás requiere autenticación
                 .anyRequest().authenticated()
             )
+            // Agregamos el RateLimitFilter ANTES del JWT
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

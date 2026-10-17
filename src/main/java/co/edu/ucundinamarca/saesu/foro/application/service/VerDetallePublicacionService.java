@@ -37,10 +37,15 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
                 .orElseThrow(() -> new PublicacionNoEncontradaException(
                         "Publicación no encontrada con id: " + publicacionId));
 
-        // 2. Cargar autor de la publicación
+        // 2. NUEVA VALIDACIÓN: Si está inactiva (eliminada lógicamente), lanzamos error
+        if (Boolean.FALSE.equals(publicacion.getActiva())) {
+            throw new PublicacionNoEncontradaException("Publicación no encontrada o eliminada");
+        }
+
+        // 3. Cargar autor de la publicación
         AutorResponse autor = construirAutor(publicacion.getAutorId());
 
-        // 3. Cargar respuestas y armar estructura anidada
+        // 4. Cargar respuestas y armar estructura anidada
         List<Respuesta> todasLasRespuestas = respuestaRepository.listarPorPublicacion(publicacionId);
         List<RespuestaResponse> respuestasAnidadas = armarArbol(todasLasRespuestas);
 

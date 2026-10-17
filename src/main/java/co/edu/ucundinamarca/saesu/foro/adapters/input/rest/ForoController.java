@@ -5,6 +5,7 @@ import co.edu.ucundinamarca.saesu.foro.application.dto.request.ResponderPublicac
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.PublicacionDetalleResponse;
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.PublicacionResumenResponse;
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.RespuestaResponse;
+import co.edu.ucundinamarca.saesu.foro.application.service.EliminarPublicacionService;
 import co.edu.ucundinamarca.saesu.foro.ports.input.CrearPublicacionUseCase;
 import co.edu.ucundinamarca.saesu.foro.ports.input.ListarPublicacionesUseCase;
 import co.edu.ucundinamarca.saesu.foro.ports.input.ResponderPublicacionUseCase;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,15 +38,18 @@ public class ForoController {
     private final CrearPublicacionUseCase crearPublicacionUseCase;
     private final VerDetallePublicacionUseCase verDetallePublicacionUseCase;
     private final ResponderPublicacionUseCase responderPublicacionUseCase;
+    private final EliminarPublicacionService eliminarPublicacionService;
 
     public ForoController(ListarPublicacionesUseCase listarPublicacionesUseCase,
                           CrearPublicacionUseCase crearPublicacionUseCase,
                           VerDetallePublicacionUseCase verDetallePublicacionUseCase,
-                          ResponderPublicacionUseCase responderPublicacionUseCase) {
+                          ResponderPublicacionUseCase responderPublicacionUseCase,
+                          EliminarPublicacionService eliminarPublicacionService) {
         this.listarPublicacionesUseCase = listarPublicacionesUseCase;
         this.crearPublicacionUseCase = crearPublicacionUseCase;
         this.verDetallePublicacionUseCase = verDetallePublicacionUseCase;
         this.responderPublicacionUseCase = responderPublicacionUseCase;
+        this.eliminarPublicacionService = eliminarPublicacionService; // <-- LÍNEA AGREGADA
     }
 
     @Operation(
@@ -100,5 +105,21 @@ public class ForoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 responderPublicacionUseCase.responder(id, request, authentication.getName())
         );
+    }
+
+    // ==========================================
+    // NUEVO ENDPOINT PARA ELIMINAR PUBLICACIÓN
+    // ==========================================
+    @Operation(
+            summary = "Eliminar publicación",
+            description = "Elimina una pregunta del foro. Solo el autor o un docente pueden hacerlo."
+    )
+    @DeleteMapping("/publicaciones/{id}")
+    public ResponseEntity<Void> eliminarPublicacion(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        eliminarPublicacionService.ejecutar(id, authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 }
