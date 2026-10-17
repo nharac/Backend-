@@ -8,6 +8,8 @@ import co.edu.ucundinamarca.saesu.practica.ports.input.ListarPreguntasUseCase;
 import co.edu.ucundinamarca.saesu.practica.ports.output.OpcionRepositoryPort;
 import co.edu.ucundinamarca.saesu.practica.ports.output.PreguntaRepositoryPort;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.List;
  * Aplica SRP: solo se encarga de listar y mapear a DTOs.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ListarPreguntasService implements ListarPreguntasUseCase {
 
@@ -24,7 +27,11 @@ public class ListarPreguntasService implements ListarPreguntasUseCase {
     private final OpcionRepositoryPort opcionRepository;
 
     @Override
+    @Cacheable(value = "preguntas", key = "#tema + '-' + #dificultad + '-' + #page + '-' + #size")
     public List<PreguntaResponse> listar(String tema, String dificultad, int page, int size) {
+       
+    
+        
         List<Pregunta> preguntas = preguntaRepository.listar(tema, dificultad, page, size);
 
         return preguntas.stream()
@@ -33,6 +40,7 @@ public class ListarPreguntasService implements ListarPreguntasUseCase {
     }
 
     @Override
+    @Cacheable(value = "contadorPreguntas", key = "#tema + '-' + #dificultad")
     public long contar(String tema, String dificultad) {
         return preguntaRepository.contar(tema, dificultad);
     }
