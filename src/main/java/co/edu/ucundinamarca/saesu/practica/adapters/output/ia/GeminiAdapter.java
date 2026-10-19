@@ -3,8 +3,6 @@ package co.edu.ucundinamarca.saesu.practica.adapters.output.ia;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.IaNoDisponibleException;
 import co.edu.ucundinamarca.saesu.practica.ports.output.IaServicePort;
 import com.fasterxml.jackson.core.JsonProcessingException;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +19,10 @@ import java.util.Map;
 
 /**
  * Adaptador que implementa IaServicePort usando la API de Google Gemini.
- * Con reintentos automáticos si Gemini devuelve 503 (sobrecarga).
+ * Con reintentos automáticos si Gemini devuelve 503 (sobrecarga) o 429 (cuota temporal).
+ *
+ * Las reglas del tutor se envían en "systemInstruction" (separadas del mensaje del
+ * estudiante) y la respuesta se arma uniendo todas las partes de texto que devuelve Gemini.
  */
 @Slf4j
 @Component
@@ -29,6 +30,13 @@ public class GeminiAdapter implements IaServicePort {
 
     private static final int MAX_REINTENTOS = 3;
     private static final long ESPERA_BASE_MS = 1000; // 1s, 2s, 4s (backoff exponencial)
+
+    /**
+     * Límite de tokens de salida. Los modelos Gemini recientes "piensan" antes de
+     * responder y ese razonamiento también cuenta aquí; con un valor bajo la
+     * respuesta visible se corta a la mitad.
+     */
+    private static final int MAX_TOKENS_SALIDA = 2048;
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -49,14 +57,14 @@ public class GeminiAdapter implements IaServicePort {
 
     @Override
     public String generarRespuesta(String systemPrompt, String historial, String mensajeNuevo) {
-        String promptCompleto = construirPrompt(systemPrompt, historial, mensajeNuevo);
+        String conversacion = construirConversacion(historial, mensajeNuevo);
 
         Exception ultimaExcepcion = null;
 
         for (int intento = 1; intento <= MAX_REINTENTOS; intento++) {
             try {
                 log.debug("Intento {}/{} de llamar a Gemini", intento, MAX_REINTENTOS);
-                return llamarGemini(promptCompleto);
+                return llamarGemini(systemPrompt, conversacion);
 
             } catch (WebClientResponseException e) {
                 int status = e.getStatusCode().value();
@@ -98,17 +106,21 @@ public class GeminiAdapter implements IaServicePort {
                 ultimaExcepcion);
     }
 
-    private String llamarGemini(String promptCompleto) {
+    private String llamarGemini(String systemPrompt, String conversacion) {
         Map<String, Object> body = Map.of(
+                // Reglas del tutor: van aparte para que el modelo no las "continúe" como texto
+                "systemInstruction", Map.of(
+                        "parts", List.of(Map.of("text", systemPrompt))
+                ),
                 "contents", List.of(
                         Map.of(
                                 "role", "user",
-                                "parts", List.of(Map.of("text", promptCompleto))
+                                "parts", List.of(Map.of("text", conversacion))
                         )
                 ),
                 "generationConfig", Map.of(
                         "temperature", 0.7,
-                        "maxOutputTokens", 300,
+                        "maxOutputTokens", MAX_TOKENS_SALIDA,
                         "topP", 0.95
                 )
         );
@@ -131,9 +143,9 @@ public class GeminiAdapter implements IaServicePort {
         return extraerTextoDeRespuesta(respuestaJson);
     }
 
-    private String construirPrompt(String systemPrompt, String historial, String mensajeNuevo) {
+    /** Historial previo + mensaje nuevo del estudiante (las reglas van en systemInstruction). */
+    private String construirConversacion(String historial, String mensajeNuevo) {
         StringBuilder sb = new StringBuilder();
-        sb.append(systemPrompt).append("\n\n");
         if (historial != null && !historial.isBlank()) {
             sb.append("--- CONVERSACIÓN PREVIA ---\n");
             sb.append(historial).append("\n");
@@ -144,30 +156,46 @@ public class GeminiAdapter implements IaServicePort {
         return sb.toString();
     }
 
-   private String extraerTextoDeRespuesta(String respuestaJson) {
-    try {
-        JsonNode root = objectMapper.readTree(respuestaJson);
-        JsonNode candidates = root.path("candidates");
-        if (candidates.isEmpty()) {
-            JsonNode feedback = root.path("promptFeedback");
-            String razon = feedback.path("blockReason").asText("");
-            throw new IaNoDisponibleException(
-                    "La IA no generó respuesta" + (razon.isBlank() ? "" : ": " + razon));
+    private String extraerTextoDeRespuesta(String respuestaJson) {
+        try {
+            JsonNode root = objectMapper.readTree(respuestaJson);
+            JsonNode candidates = root.path("candidates");
+            if (candidates.isEmpty()) {
+                JsonNode feedback = root.path("promptFeedback");
+                String razon = feedback.path("blockReason").asText("");
+                throw new IaNoDisponibleException(
+                        "La IA no generó respuesta" + (razon.isBlank() ? "" : ": " + razon));
+            }
+
+            JsonNode candidato = candidates.get(0);
+            String finishReason = candidato.path("finishReason").asText("");
+            if ("MAX_TOKENS".equals(finishReason)) {
+                log.warn("Gemini cortó la respuesta por límite de tokens (maxOutputTokens={})",
+                        MAX_TOKENS_SALIDA);
+            }
+
+            // Gemini puede dividir la respuesta en varias partes: se unen todas.
+            // Las partes marcadas como "thought" son razonamiento interno y se omiten.
+            StringBuilder texto = new StringBuilder();
+            for (JsonNode parte : candidato.path("content").path("parts")) {
+                if (parte.path("thought").asBoolean(false)) {
+                    continue;
+                }
+                texto.append(parte.path("text").asText(""));
+            }
+
+            String resultado = texto.toString().trim();
+            if (resultado.isBlank()) {
+                throw new IaNoDisponibleException("La IA devolvió una respuesta vacía");
+            }
+            return resultado;
+
+        } catch (JsonProcessingException e) {
+            log.error("Error parseando respuesta de Gemini: {}", respuestaJson, e);
+            throw new IaNoDisponibleException("Respuesta de IA inválida", e);
         }
-        JsonNode parts = candidates.get(0).path("content").path("parts");
-        if (parts.isEmpty()) {
-            throw new IaNoDisponibleException("La IA devolvió una respuesta vacía");
-        }
-        String texto = parts.get(0).path("text").asText("");
-        if (texto.isBlank()) {
-            throw new IaNoDisponibleException("La IA devolvió una respuesta vacía");
-        }
-        return texto.trim();
-    } catch (JsonProcessingException e) {
-        log.error("Error parseando respuesta de Gemini: {}", respuestaJson, e);
-        throw new IaNoDisponibleException("Respuesta de IA inválida", e);
     }
-}
+
     private void dormir(long ms) {
         try {
             Thread.sleep(ms);
