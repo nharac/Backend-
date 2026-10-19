@@ -1,4 +1,3 @@
-
 services:
   saesu-backend:
     build: .
@@ -10,3 +9,9 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
+    networks:
+      - saesu-network
+
+networks:
+  saesu-network:
+    name: saesu-network
