@@ -15,7 +15,8 @@ public class UsuarioMapper {
                 entity.getCorreo(),
                 entity.getPassword(),
                 entity.getRol(),
-                entity.getFechaRegistro()
+                entity.getFechaRegistro(),
+                entity.getFotoPerfilUrl() // <-- NUEVO CAMPO
         );
     }
 
@@ -27,7 +28,8 @@ public class UsuarioMapper {
                 domain.getCorreo(),
                 domain.getPassword(),
                 domain.getRol(),
-                domain.getFechaRegistro()
+                domain.getFechaRegistro(),
+                domain.getFotoPerfilUrl() // <-- NUEVO CAMPO
         );
     }
 }
