@@ -12,6 +12,7 @@ import co.edu.ucundinamarca.saesu.foro.domain.model.Respuesta;
 import co.edu.ucundinamarca.saesu.foro.ports.input.ResponderPublicacionUseCase;
 import co.edu.ucundinamarca.saesu.foro.ports.output.PublicacionRepositoryPort;
 import co.edu.ucundinamarca.saesu.foro.ports.output.RespuestaRepositoryPort;
+import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService;
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,8 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
     private final PublicacionRepositoryPort publicacionRepository;
     private final RespuestaRepositoryPort respuestaRepository;
     private final UsuarioRepositoryPort usuarioRepository;
-    private final EmailService emailService; // <-- NUEVO
+    private final EmailService emailService; // emails
+    private final PuntosService puntosService; // servicio de puntos
 
     @Override
     @Transactional
@@ -94,7 +96,10 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
             System.err.println("Error enviando correo de notificación del foro: " + e.getMessage());
         }
 
-        // 6. Convertir a DTO
+        // OTORGAR PUNTOS POR RESPONDER EN EL FORO (10 puntos)
+        puntosService.otorgarPuntos(autor.getId(), 10, "Respondió en el foro");
+
+        // Convertir a DTO
         AutorResponse autorDto = new AutorResponse(
                 autor.getId(),
                 autor.getNombre(),

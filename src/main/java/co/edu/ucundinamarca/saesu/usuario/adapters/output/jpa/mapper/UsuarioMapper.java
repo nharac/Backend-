@@ -16,20 +16,27 @@ public class UsuarioMapper {
                 entity.getPassword(),
                 entity.getRol(),
                 entity.getFechaRegistro(),
-                entity.getFotoPerfilUrl() // <-- NUEVO CAMPO
+                entity.getFotoPerfilUrl()
+                
         );
     }
 
     public UsuarioEntity toEntity(Usuario domain) {
         if (domain == null) return null;
-        return new UsuarioEntity(
-                domain.getId(),
-                domain.getNombre(),
-                domain.getCorreo(),
-                domain.getPassword(),
-                domain.getRol(),
-                domain.getFechaRegistro(),
-                domain.getFotoPerfilUrl() // <-- NUEVO CAMPO
-        );
+        
+     
+        UsuarioEntity entity = new UsuarioEntity();
+        entity.setId(domain.getId());
+        entity.setNombre(domain.getNombre());
+        entity.setCorreo(domain.getCorreo());
+        entity.setPassword(domain.getPassword());
+        entity.setRol(domain.getRol());
+        entity.setFechaRegistro(domain.getFechaRegistro());
+        entity.setFotoPerfilUrl(domain.getFotoPerfilUrl());
+        
+        entity.setRachaActual(0);
+        entity.setUltimaFechaPractica(null);
+        
+        return entity;
     }
 }

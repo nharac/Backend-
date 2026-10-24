@@ -37,4 +37,10 @@ public class UsuarioEntity {
 
     @Column(name = "foto_perfil_url", length = 500)
     private String fotoPerfilUrl;
+
+    @Column(name = "racha_actual", nullable = false)
+    private Integer rachaActual = 0;
+
+    @Column(name = "ultima_fecha_practica")
+    private java.time.LocalDate ultimaFechaPractica;
 }

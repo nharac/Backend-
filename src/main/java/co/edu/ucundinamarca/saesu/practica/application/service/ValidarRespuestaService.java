@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.practica.application.service;
 
+import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService; // <-- NUEVO IMPORT
 import co.edu.ucundinamarca.saesu.practica.application.dto.response.ValidacionResponse;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.OpcionInvalidaException;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.PreguntaNoEncontradaException;
@@ -29,6 +30,7 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
     private final OpcionRepositoryPort opcionRepository;
     private final RespuestaEstudianteRepositoryPort respuestaRepository;
     private final UsuarioConsultaPort usuarioConsultaPort;
+    private final PuntosService puntosService; // <-- NUEVO
 
     @Override
     @Transactional
@@ -65,13 +67,15 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
         );
         respuestaRepository.guardar(intento);
 
-        // 6. Construir respuesta según resultado
+        // 6. SI ES CORRECTA: Otorgar 20 puntos
         if (esCorrecta) {
+            puntosService.otorgarPuntos(usuarioId, 20, "Acierto en práctica: " + pregunta.getTema().getValor());
+            
             return new ValidacionResponse(
                     true,
                     opcionId,
                     null,
-                    "¡Correcto!",
+                    "¡Correcto! (+20 puntos)",
                     true,
                     false
             );
