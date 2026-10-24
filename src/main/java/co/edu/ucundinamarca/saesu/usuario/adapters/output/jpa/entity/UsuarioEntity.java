@@ -34,4 +34,7 @@ public class UsuarioEntity {
 
     @Column(name = "fecha_registro", nullable = false)
     private LocalDateTime fechaRegistro;
+
+    @Column(name = "foto_perfil_url", length = 500)
+    private String fotoPerfilUrl;
 }

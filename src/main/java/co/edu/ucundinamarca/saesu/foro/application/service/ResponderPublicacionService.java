@@ -1,11 +1,13 @@
 package co.edu.ucundinamarca.saesu.foro.application.service;
 
+import co.edu.ucundinamarca.saesu.core.notificacion.EmailService; // <-- email
 import co.edu.ucundinamarca.saesu.foro.application.dto.request.ResponderPublicacionRequest;
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.AutorResponse;
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.RespuestaResponse;
 import co.edu.ucundinamarca.saesu.foro.domain.exception.PublicacionNoEncontradaException;
 import co.edu.ucundinamarca.saesu.foro.domain.exception.RespuestaNoEncontradaException;
 import co.edu.ucundinamarca.saesu.foro.domain.exception.RespuestaPadreInvalidaException;
+import co.edu.ucundinamarca.saesu.foro.domain.model.Publicacion; // <-- email
 import co.edu.ucundinamarca.saesu.foro.domain.model.Respuesta;
 import co.edu.ucundinamarca.saesu.foro.ports.input.ResponderPublicacionUseCase;
 import co.edu.ucundinamarca.saesu.foro.ports.output.PublicacionRepositoryPort;
@@ -29,6 +31,7 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
     private final PublicacionRepositoryPort publicacionRepository;
     private final RespuestaRepositoryPort respuestaRepository;
     private final UsuarioRepositoryPort usuarioRepository;
+    private final EmailService emailService; // <-- NUEVO
 
     @Override
     @Transactional
@@ -36,35 +39,33 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
                                         ResponderPublicacionRequest request,
                                         String correoAutor) {
 
-        // 1. Validar que la publicación existe
-        publicacionRepository.buscarPorId(publicacionId)
+        // Validar que la publicación existe 
+        Publicacion publicacion = publicacionRepository.buscarPorId(publicacionId)
                 .orElseThrow(() -> new PublicacionNoEncontradaException(
                         "Publicación no encontrada con id: " + publicacionId));
 
-        // 2. Validar respuesta padre (si aplica)
+        //  Validar respuesta padre (si aplica)
         if (request.getRespuestaPadreId() != null) {
             Respuesta padre = respuestaRepository.buscarPorId(request.getRespuestaPadreId())
                     .orElseThrow(() -> new RespuestaNoEncontradaException(
                             "Respuesta padre no encontrada con id: " + request.getRespuestaPadreId()));
 
-            // El padre debe pertenecer a la misma publicación
             if (!padre.getPublicacionId().equals(publicacionId)) {
                 throw new RespuestaPadreInvalidaException(
                         "La respuesta padre no pertenece a esta publicación");
             }
 
-            // Solo 1 nivel: el padre no puede ser ya una respuesta anidada
             if (padre.esAnidada()) {
                 throw new RespuestaPadreInvalidaException(
                         "No se permiten más de 1 nivel de anidamiento");
             }
         }
 
-        // 3. Buscar autor
+        //  Buscar autor
         Usuario autor = usuarioRepository.buscarPorCorreo(correoAutor)
                 .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
 
-        // 4. Crear respuesta
+        // Crear respuesta
         Respuesta respuesta = new Respuesta(
                 null,
                 publicacionId,
@@ -77,7 +78,23 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
 
         Respuesta guardada = respuestaRepository.guardar(respuesta);
 
-        // 5. Convertir a DTO
+        //  Enviar correo al autor de la publicación (si no es el mismo que responde)
+        try {
+            if (!publicacion.getAutorId().equals(autor.getId())) {
+                Usuario autorPublicacion = usuarioRepository.buscarPorId(publicacion.getAutorId())
+                        .orElseThrow(() -> new RuntimeException("Autor de la publicación no encontrado"));
+                
+                emailService.enviarCorreoNuevaRespuesta(
+                        autorPublicacion.getCorreo(),
+                        autorPublicacion.getNombre(),
+                        publicacion.getTitulo()
+                );
+            }
+        } catch (Exception e) {
+            System.err.println("Error enviando correo de notificación del foro: " + e.getMessage());
+        }
+
+        // 6. Convertir a DTO
         AutorResponse autorDto = new AutorResponse(
                 autor.getId(),
                 autor.getNombre(),

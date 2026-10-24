@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.usuario.application.service;
 
+import co.edu.ucundinamarca.saesu.core.notificacion.EmailService; // <-- NUEVO
 import co.edu.ucundinamarca.saesu.core.security.service.JwtService;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.RegistroRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.AuthResponse;
@@ -19,13 +20,16 @@ public class RegistrarUsuarioService implements RegistrarUsuarioUseCase {
     private final UsuarioRepositoryPort usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final EmailService emailService; // <-- NUEVO
 
     public RegistrarUsuarioService(UsuarioRepositoryPort usuarioRepository,
                                    PasswordEncoder passwordEncoder,
-                                   JwtService jwtService) {
+                                   JwtService jwtService,
+                                   EmailService emailService) { // <-- emailService agregado al constructor
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -43,11 +47,16 @@ public class RegistrarUsuarioService implements RegistrarUsuarioUseCase {
 
         Usuario guardado = usuarioRepository.guardar(nuevo);
         
-        // Generamos ambos tokens
         String token = jwtService.generarToken(guardado.getCorreo(), guardado.getRol());
         String refreshToken = jwtService.generarRefreshToken(guardado.getCorreo()); 
 
-        // Retornamos los 3 parámetros
+        // Enviamos el correo (en un bloque try-catch por si falla la red, no dañe el registro)
+        try {
+            emailService.enviarCorreoBienvenida(guardado.getCorreo(), guardado.getNombre());
+        } catch (Exception e) {
+            System.err.println("Error enviando correo de bienvenida: " + e.getMessage());
+        }
+
         return new AuthResponse(mapearAResponse(guardado), token, refreshToken); 
     }
 

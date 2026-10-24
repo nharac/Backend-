@@ -18,4 +18,5 @@ public class Usuario {
     private String password;
     private String rol;
     private LocalDateTime fechaRegistro;
+    private String fotoPerfilUrl;
 }
