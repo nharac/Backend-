@@ -7,21 +7,17 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/**
- * DTO de resumen de publicación para el listado del foro.
- * NO incluye las respuestas (solo el contador).
- */
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class PublicacionResumenResponse {
-
     private Long id;
     private String titulo;
-    private String contenidoPreview;   // primeros 150 caracteres del contenido
+    private String contenidoPreview;
     private String tema;
     private AutorResponse autor;
     private LocalDateTime fechaCreacion;
     private long respuestasCount;
+    private String imagenUrl; // <-- imagenes
 }

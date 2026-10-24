@@ -25,4 +25,5 @@ public class Publicacion {
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
     private Boolean activa;
+        private String imagenUrl; // URL de la imagen asociada a la publicación 
 }

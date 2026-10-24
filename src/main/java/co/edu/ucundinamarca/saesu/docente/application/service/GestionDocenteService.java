@@ -38,7 +38,7 @@ public class GestionDocenteService implements GestionDocenteUseCase {
             long cant = respuestaRepository.contarPorPublicacion(p.getId());
             return new PublicacionResumenResponse(
                 p.getId(), p.getTitulo(), p.getContenido().substring(0, Math.min(150, p.getContenido().length())) + "...",
-                p.getTema(), autorDto, p.getFechaCreacion(), cant
+                p.getTema(), autorDto, p.getFechaCreacion(), cant, p.getImagenUrl()
             );
         }).toList();
     }
@@ -68,4 +68,5 @@ public class GestionDocenteService implements GestionDocenteUseCase {
         return partes.length == 1 ? partes[0].substring(0, 1).toUpperCase() : 
                (partes[0].substring(0, 1) + partes[partes.length - 1].substring(0, 1)).toUpperCase();
     }
+    
 }

@@ -8,15 +8,11 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * DTO con el detalle completo de una publicación y sus respuestas anidadas.
- */
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class PublicacionDetalleResponse {
-
     private Long id;
     private String titulo;
     private String contenido;
@@ -24,4 +20,5 @@ public class PublicacionDetalleResponse {
     private AutorResponse autor;
     private LocalDateTime fechaCreacion;
     private List<RespuestaResponse> respuestas;
+    private String imagenUrl; // <-- imagenes
 }

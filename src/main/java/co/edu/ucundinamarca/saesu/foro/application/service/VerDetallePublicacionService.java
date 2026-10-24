@@ -19,9 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Caso de uso: ver el detalle de una publicación con sus respuestas anidadas.
- */
 @Service
 @RequiredArgsConstructor
 public class VerDetallePublicacionService implements VerDetallePublicacionUseCase {
@@ -32,20 +29,15 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
 
     @Override
     public PublicacionDetalleResponse verDetalle(Long publicacionId) {
-        // 1. Buscar publicación
         Publicacion publicacion = publicacionRepository.buscarPorId(publicacionId)
                 .orElseThrow(() -> new PublicacionNoEncontradaException(
                         "Publicación no encontrada con id: " + publicacionId));
 
-        // 2. NUEVA VALIDACIÓN: Si está inactiva (eliminada lógicamente), lanzamos error
         if (Boolean.FALSE.equals(publicacion.getActiva())) {
             throw new PublicacionNoEncontradaException("Publicación no encontrada o eliminada");
         }
 
-        // 3. Cargar autor de la publicación
         AutorResponse autor = construirAutor(publicacion.getAutorId());
-
-        // 4. Cargar respuestas y armar estructura anidada
         List<Respuesta> todasLasRespuestas = respuestaRepository.listarPorPublicacion(publicacionId);
         List<RespuestaResponse> respuestasAnidadas = armarArbol(todasLasRespuestas);
 
@@ -56,16 +48,12 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
                 publicacion.getTema(),
                 autor,
                 publicacion.getFechaCreacion(),
-                respuestasAnidadas
+                respuestasAnidadas,
+                publicacion.getImagenUrl() // <-- NUEVO
         );
     }
 
-    /**
-     * Arma la estructura de árbol: respuestas con respuestaPadreId=null son raíz,
-     * las demás se anidan bajo su padre.
-     */
     private List<RespuestaResponse> armarArbol(List<Respuesta> respuestas) {
-        // Mapear respuestas a DTOs (sin hijas)
         Map<Long, RespuestaResponse> mapaRespuestas = respuestas.stream()
                 .collect(Collectors.toMap(
                         Respuesta::getId,
@@ -81,7 +69,6 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
 
         List<RespuestaResponse> raices = new ArrayList<>();
 
-        // Conectar cada respuesta con su padre
         for (Respuesta r : respuestas) {
             RespuestaResponse dto = mapaRespuestas.get(r.getId());
             if (r.getRespuestaPadreId() == null) {
@@ -91,7 +78,6 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
                 if (padre != null) {
                     padre.getRespuestasHijas().add(dto);
                 } else {
-                    // Si el padre no existe (dato corrupto), la subimos a raíz
                     raices.add(dto);
                 }
             }

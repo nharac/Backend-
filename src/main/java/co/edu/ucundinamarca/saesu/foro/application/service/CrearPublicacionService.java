@@ -15,9 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 
-/**
- * Caso de uso: crear una publicación en el foro.
- */
 @Service
 @RequiredArgsConstructor
 public class CrearPublicacionService implements CrearPublicacionUseCase {
@@ -28,11 +25,9 @@ public class CrearPublicacionService implements CrearPublicacionUseCase {
     @Override
     @Transactional
     public PublicacionDetalleResponse crear(CrearPublicacionRequest request, String correoAutor) {
-        // 1. Buscar el autor
         Usuario autor = usuarioRepository.buscarPorCorreo(correoAutor)
                 .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
 
-        // 2. Crear la publicación
         Publicacion publicacion = new Publicacion(
                 null,
                 autor.getId(),
@@ -41,13 +36,12 @@ public class CrearPublicacionService implements CrearPublicacionUseCase {
                 request.getTema(),
                 LocalDateTime.now(),
                 LocalDateTime.now(),
-                true
+                true,
+                request.getImagenUrl() // <-- NUEVO
         );
 
-        // 3. Guardar
         Publicacion guardada = publicacionRepository.guardar(publicacion);
 
-        // 4. Convertir a DTO
         AutorResponse autorDto = new AutorResponse(
                 autor.getId(),
                 autor.getNombre(),
@@ -62,7 +56,8 @@ public class CrearPublicacionService implements CrearPublicacionUseCase {
                 guardada.getTema(),
                 autorDto,
                 guardada.getFechaCreacion(),
-                Collections.emptyList()
+                Collections.emptyList(),
+                guardada.getImagenUrl() // <-- NUEVO
         );
     }
 

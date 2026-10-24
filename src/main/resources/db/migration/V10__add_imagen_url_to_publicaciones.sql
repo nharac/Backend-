@@ -1,0 +1,1 @@
+ALTER TABLE publicaciones ADD COLUMN imagen_url VARCHAR(500);

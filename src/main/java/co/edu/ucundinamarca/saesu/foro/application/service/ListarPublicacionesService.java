@@ -13,9 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Caso de uso: listar publicaciones con filtros.
- */
 @Service
 @RequiredArgsConstructor
 public class ListarPublicacionesService implements ListarPublicacionesUseCase {
@@ -40,9 +37,6 @@ public class ListarPublicacionesService implements ListarPublicacionesUseCase {
         return publicacionRepository.contar(tema, busqueda);
     }
 
-    /**
-     * Convierte una Publicacion de dominio a PublicacionResumenResponse.
-     */
     private PublicacionResumenResponse convertirAResumen(Publicacion publicacion) {
         AutorResponse autor = construirAutor(publicacion.getAutorId());
         long respuestasCount = respuestaRepository.contarPorPublicacion(publicacion.getId());
@@ -55,13 +49,11 @@ public class ListarPublicacionesService implements ListarPublicacionesUseCase {
                 publicacion.getTema(),
                 autor,
                 publicacion.getFechaCreacion(),
-                respuestasCount
+                respuestasCount,
+                publicacion.getImagenUrl() // <-- NUEVO
         );
     }
 
-    /**
-     * Construye el AutorResponse a partir del ID del autor.
-     */
     private AutorResponse construirAutor(Long autorId) {
         Usuario usuario = usuarioRepository.buscarPorId(autorId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + autorId));
@@ -73,9 +65,6 @@ public class ListarPublicacionesService implements ListarPublicacionesUseCase {
         );
     }
 
-    /**
-     * Calcula las iniciales del nombre (ej: "Carlos Pérez" → "CP").
-     */
     private String calcularIniciales(String nombre) {
         if (nombre == null || nombre.isBlank()) return "?";
         String[] partes = nombre.trim().split("\\s+");
@@ -85,9 +74,6 @@ public class ListarPublicacionesService implements ListarPublicacionesUseCase {
         return (partes[0].substring(0, 1) + partes[partes.length - 1].substring(0, 1)).toUpperCase();
     }
 
-    /**
-     * Corta el contenido a 150 caracteres para el preview.
-     */
     private String construirPreview(String contenido) {
         if (contenido == null) return "";
         if (contenido.length() <= PREVIEW_MAX) return contenido;

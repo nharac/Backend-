@@ -52,7 +52,9 @@ public class PublicacionEntity {
     @Column(name = "fecha_actualizacion", nullable = false)
     private LocalDateTime fechaActualizacion;
 
-
     @Column(nullable = false)
     private Boolean activa = true;
+
+    @Column(name = "imagen_url", length = 500)
+    private String imagenUrl;
 }

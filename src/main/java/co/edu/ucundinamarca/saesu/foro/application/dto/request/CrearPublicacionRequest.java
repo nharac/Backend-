@@ -31,4 +31,5 @@ public class CrearPublicacionRequest {
             message = "El tema debe ser: limites, derivadas o integrales"
     )
     private String tema;
+    private String imagenUrl;
 }

@@ -19,7 +19,9 @@ public class PublicacionMapper {
                 entity.getTema(),
                 entity.getFechaCreacion(),
                 entity.getFechaActualizacion(),
-                entity.getActiva() // <-- NUEVO CAMPO AGREGADO
+                entity.getActiva(),
+                entity.getImagenUrl()
+                
         );
     }
 
@@ -32,7 +34,8 @@ public class PublicacionMapper {
         entity.setTema(dominio.getTema());
         entity.setFechaCreacion(dominio.getFechaCreacion());
         entity.setFechaActualizacion(dominio.getFechaActualizacion());
-        entity.setActiva(dominio.getActiva()); // <-- NUEVO CAMPO AGREGADO
+        entity.setActiva(dominio.getActiva()); 
+        entity.setImagenUrl(dominio.getImagenUrl());
         return entity;
     }
 }
