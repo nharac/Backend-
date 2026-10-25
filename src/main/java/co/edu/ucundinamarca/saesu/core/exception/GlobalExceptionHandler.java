@@ -5,6 +5,7 @@ import co.edu.ucundinamarca.saesu.practica.domain.exception.LimiteChatExcedidoEx
 import co.edu.ucundinamarca.saesu.practica.domain.exception.OpcionInvalidaException;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.PreguntaNoEncontradaException;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.ErrorResponse;
+import co.edu.ucundinamarca.saesu.usuario.domain.exception.ContrasenaIncorrectaException;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.CorreoYaRegistradoException;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.CredencialesInvalidasException;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.UsuarioNoEncontradoException;
@@ -33,6 +34,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CredencialesInvalidasException.class)
     public ResponseEntity<ErrorResponse> handleCredenciales(CredencialesInvalidasException ex, HttpServletRequest req) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), req.getRequestURI());
+    }
+
+    @ExceptionHandler(ContrasenaIncorrectaException.class)
+    public ResponseEntity<ErrorResponse> handleContrasenaIncorrecta(ContrasenaIncorrectaException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), req.getRequestURI());
     }
 
     @ExceptionHandler(UsuarioNoEncontradoException.class)

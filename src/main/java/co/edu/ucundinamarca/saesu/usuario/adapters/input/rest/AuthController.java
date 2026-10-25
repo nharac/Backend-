@@ -1,11 +1,13 @@
 package co.edu.ucundinamarca.saesu.usuario.adapters.input.rest;
 
 import co.edu.ucundinamarca.saesu.core.security.service.JwtService;
+import co.edu.ucundinamarca.saesu.usuario.application.dto.request.ActualizarPerfilRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.LoginRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.RegistroRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.AuthResponse;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.UsuarioResponse;
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
+import co.edu.ucundinamarca.saesu.usuario.ports.input.ActualizarPerfilUseCase;
 import co.edu.ucundinamarca.saesu.usuario.ports.input.LoginUseCase;
 import co.edu.ucundinamarca.saesu.usuario.ports.input.ObtenerPerfilUseCase;
 import co.edu.ucundinamarca.saesu.usuario.ports.input.RegistrarUsuarioUseCase;
@@ -27,6 +29,7 @@ public class AuthController {
     private final RegistrarUsuarioUseCase registrarUsuarioUseCase;
     private final LoginUseCase loginUseCase;
     private final ObtenerPerfilUseCase obtenerPerfilUseCase;
+    private final ActualizarPerfilUseCase actualizarPerfilUseCase;
     // NUEVAS DEPENDENCIAS
     private final JwtService jwtService;
     private final UsuarioRepositoryPort usuarioRepository;
@@ -34,11 +37,13 @@ public class AuthController {
     public AuthController(RegistrarUsuarioUseCase registrarUsuarioUseCase,
                           LoginUseCase loginUseCase,
                           ObtenerPerfilUseCase obtenerPerfilUseCase,
+                          ActualizarPerfilUseCase actualizarPerfilUseCase,
                           JwtService jwtService,
                           UsuarioRepositoryPort usuarioRepository) {
         this.registrarUsuarioUseCase = registrarUsuarioUseCase;
         this.loginUseCase = loginUseCase;
         this.obtenerPerfilUseCase = obtenerPerfilUseCase;
+        this.actualizarPerfilUseCase = actualizarPerfilUseCase;
         this.jwtService = jwtService;
         this.usuarioRepository = usuarioRepository;
     }
@@ -68,6 +73,19 @@ public class AuthController {
     @GetMapping("/perfil")
     public ResponseEntity<UsuarioResponse> perfil(Authentication authentication) {
         return ResponseEntity.ok(obtenerPerfilUseCase.obtenerPerfil(authentication.getName()));
+    }
+
+    @Operation(
+            summary = "Actualizar perfil",
+            description = "Actualiza el nombre del usuario autenticado y, si se envían passwordActual y passwordNueva, "
+                    + "también su contraseña. El correo y el rol no se pueden cambiar. Requiere JWT."
+    )
+    @PutMapping("/perfil")
+    public ResponseEntity<UsuarioResponse> actualizarPerfil(
+            @Valid @RequestBody ActualizarPerfilRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(actualizarPerfilUseCase.actualizarPerfil(authentication.getName(), request));
     }
 
     @Operation(summary = "Refrescar Token", description = "Obtiene un nuevo JWT usando un Refresh Token válido.")
