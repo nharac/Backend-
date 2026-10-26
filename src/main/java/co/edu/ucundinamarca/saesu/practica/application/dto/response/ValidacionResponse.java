@@ -19,4 +19,8 @@ public class ValidacionResponse {
     private String mensaje;
     private Boolean habilitarSiguiente;
     private Boolean chatIaHabilitado;
+    /** Puntos que se ganaron con este intento (0 si falló o si la pregunta ya estaba resuelta). */
+    private Integer puntosGanados;
+    /** Puntos que vale acertar en el siguiente intento (baja con cada fallo). */
+    private Integer puntosEnJuego;
 }
