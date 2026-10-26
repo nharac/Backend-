@@ -86,13 +86,29 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, mensaje, req.getRequestURI());
     }
 
+    /** Datos inválidos (ej. imagen que no es JPG/PNG o URL de imagen ajena). */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleArgumentoInvalido(IllegalArgumentException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), req.getRequestURI());
+    }
+
+    /** Archivo más grande que spring.servlet.multipart.max-file-size. */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleArchivoGrande(Exception ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo es demasiado grande", req.getRequestURI());
+    }
+
     // ============================================
     // Fallback
     // ============================================
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest req) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), req.getRequestURI());
+        // El detalle queda en los logs; al cliente no se le muestran mensajes internos
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
+                .error("Error no controlado en {}", req.getRequestURI(), ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Ocurrió un error inesperado. Intenta de nuevo.", req.getRequestURI());
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String mensaje, String path) {

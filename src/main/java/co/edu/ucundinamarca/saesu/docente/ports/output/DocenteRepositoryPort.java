@@ -5,7 +5,8 @@ import java.util.List;
 
 public interface DocenteRepositoryPort {
     List<Publicacion> listarSinRespuestaOficial();
-    void marcarOficial(Long respuestaId);
+    /** Marca la respuesta como oficial y guarda qué docente lo hizo y cuándo (SCRUM-91). */
+    void marcarOficial(Long respuestaId, Long docenteId);
     void quitarOficial(Long respuestaId);
     void quitarOficialesDePublicacion(Long publicacionId);
 }

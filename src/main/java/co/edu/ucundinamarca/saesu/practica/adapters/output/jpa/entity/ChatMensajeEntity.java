@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,7 +19,6 @@ import java.time.LocalDateTime;
 @Table(name = "chat_mensaje")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
 public class ChatMensajeEntity {
 
@@ -42,4 +40,19 @@ public class ChatMensajeEntity {
 
     @Column(name = "fecha_hora", nullable = false)
     private LocalDateTime fechaHora;
+
+    /** true = el estudiante "borró" el historial; sigue contando para el límite diario. */
+    @Column(nullable = false)
+    private Boolean oculto = false;
+
+    public ChatMensajeEntity(Long id, Long usuarioId, Long preguntaId, String rolEmisor,
+                             String mensaje, LocalDateTime fechaHora) {
+        this.id = id;
+        this.usuarioId = usuarioId;
+        this.preguntaId = preguntaId;
+        this.rolEmisor = rolEmisor;
+        this.mensaje = mensaje;
+        this.fechaHora = fechaHora;
+        this.oculto = false;
+    }
 }

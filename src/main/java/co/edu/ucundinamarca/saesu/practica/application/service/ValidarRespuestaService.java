@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.practica.application.service;
 
+import co.edu.ucundinamarca.saesu.gamificacion.application.service.LogrosService;
 import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService; // <-- NUEVO IMPORT
 import co.edu.ucundinamarca.saesu.practica.application.dto.response.ValidacionResponse;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.OpcionInvalidaException;
@@ -32,6 +33,7 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
     private final RespuestaEstudianteRepositoryPort respuestaRepository;
     private final UsuarioConsultaPort usuarioConsultaPort;
     private final PuntosService puntosService; // <-- NUEVO
+    private final LogrosService logrosService;
 
     /** Puntaje de un acierto: empieza en 20 y baja 5 por cada fallo, mínimo 5. */
     static final int PUNTOS_MAXIMOS = 20;
@@ -86,9 +88,12 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
 
         // 7. Puntos: solo la primera vez que acierta la pregunta,
         //    y valen menos por cada fallo anterior (20, 15, 10, 5...)
+        ValidacionResponse respuesta;
         if (esCorrecta) {
             if (yaResuelta) {
-                return new ValidacionResponse(
+                // Sin puntos, pero el día sí cuenta para la racha
+                puntosService.registrarActividad(usuarioId);
+                respuesta = new ValidacionResponse(
                         true,
                         opcionId,
                         null,
@@ -98,22 +103,24 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
                         0,
                         0
                 );
+            } else {
+                int puntos = puntosSegunFallos(fallosPrevios);
+                puntosService.otorgarPuntos(usuarioId, puntos, "Acierto en práctica: " + pregunta.getTema().getValor());
+                respuesta = new ValidacionResponse(
+                        true,
+                        opcionId,
+                        null,
+                        "¡Correcto! (+" + puntos + " puntos)",
+                        true,
+                        false,
+                        puntos,
+                        0
+                );
             }
-            int puntos = puntosSegunFallos(fallosPrevios);
-            puntosService.otorgarPuntos(usuarioId, puntos, "Acierto en práctica: " + pregunta.getTema().getValor());
-
-            return new ValidacionResponse(
-                    true,
-                    opcionId,
-                    null,
-                    "¡Correcto! (+" + puntos + " puntos)",
-                    true,
-                    false,
-                    puntos,
-                    0
-            );
+            // 8. ¿Desbloqueó algún logro con este acierto?
+            respuesta.setNuevosLogros(logrosService.evaluar(usuarioId));
         } else {
-            return new ValidacionResponse(
+            respuesta = new ValidacionResponse(
                     false,
                     null,
                     pregunta.getPista(),
@@ -124,5 +131,6 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
                     yaResuelta ? 0 : puntosSegunFallos(fallosPrevios + 1)
             );
         }
+        return respuesta;
     }
 }

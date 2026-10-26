@@ -96,8 +96,8 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
             System.err.println("Error enviando correo de notificación del foro: " + e.getMessage());
         }
 
-        // OTORGAR PUNTOS POR RESPONDER EN EL FORO (10 puntos)
-        puntosService.otorgarPuntos(autor.getId(), 10, "Respondió en el foro");
+        // PUNTOS POR RESPONDER EN EL FORO: +10, máximo 3 por día y no en publicaciones propias
+        puntosService.otorgarPuntosForo(autor.getId(), publicacion.getAutorId());
 
         // Convertir a DTO
         AutorResponse autorDto = new AutorResponse(
