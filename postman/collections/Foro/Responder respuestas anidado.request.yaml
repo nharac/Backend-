@@ -1,4 +1,11 @@
 $kind: http-request
-url: ""
-method: GET
+url: http://localhost:8080/api/foro/publicaciones/1/respuestas
+method: POST
+body:
+  type: json
+  content: "{\n  \"contenido\": \"¡Gracias! Ahora me da 2.\",\n  \"respuestaPadreId\": 1\n}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
 order: 4000

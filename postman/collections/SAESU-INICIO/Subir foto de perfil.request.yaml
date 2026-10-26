@@ -1,0 +1,15 @@
+$kind: http-request
+description: "multipart/form-data, campo 'archivo' (jpg, png, webp o gif; máx. 5 MB). Devuelve la URL de la foto."
+url: http://localhost:8080/api/perfil/foto
+method: POST
+body:
+  type: formdata
+  content:
+    - key: archivo
+      type: file
+      value: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 5000

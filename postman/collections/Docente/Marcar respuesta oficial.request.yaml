@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. Otorga +15 puntos (una sola vez) al estudiante autor."
+url: http://localhost:8080/api/docente/respuestas/1/oficial
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 2000

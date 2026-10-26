@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Oculta los mensajes (borrado lógico); no se eliminan de la base de datos."
+url: http://localhost:8080/api/chat/historial
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 5000
