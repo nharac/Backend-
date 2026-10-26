@@ -99,6 +99,24 @@ public class GlobalExceptionHandler {
     }
 
     // ============================================
+    // Excepciones del módulo foro
+    // ============================================
+
+    @ExceptionHandler({
+            co.edu.ucundinamarca.saesu.foro.domain.exception.PublicacionNoEncontradaException.class,
+            co.edu.ucundinamarca.saesu.foro.domain.exception.RespuestaNoEncontradaException.class
+    })
+    public ResponseEntity<ErrorResponse> handleForoNoEncontrado(RuntimeException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), req.getRequestURI());
+    }
+
+    /** Rol sin permiso (ej. un estudiante llamando a /api/docente/**): 403 en vez de 500. */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccesoDenegado(Exception ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta acción", req.getRequestURI());
+    }
+
+    // ============================================
     // Fallback
     // ============================================
 

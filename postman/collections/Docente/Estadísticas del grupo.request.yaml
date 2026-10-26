@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. Aciertos por tema, preguntas más falladas y actividad de 14 días."
+url: http://localhost:8080/api/docente/estadisticas
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 4000

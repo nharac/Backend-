@@ -44,7 +44,7 @@ public class LogrosJdbcRepository {
     }
 
     public long contarPreguntasDelTema(String tema) {
-        return contar("SELECT COUNT(*) FROM preguntas WHERE tema = ?", tema);
+        return contar("SELECT COUNT(*) FROM preguntas WHERE tema = ? AND activa", tema);
     }
 
     /** Preguntas distintas del tema que el usuario ha acertado al menos una vez. */
@@ -53,7 +53,7 @@ public class LogrosJdbcRepository {
                 SELECT COUNT(DISTINCT r.pregunta_id)
                 FROM respuestas_estudiante r
                 JOIN preguntas p ON p.id = r.pregunta_id
-                WHERE r.usuario_id = ? AND r.es_correcta = TRUE AND p.tema = ?
+                WHERE r.usuario_id = ? AND r.es_correcta = TRUE AND p.tema = ? AND p.activa
                 """, usuarioId, tema);
     }
 
