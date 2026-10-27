@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (jwtService.validarToken(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
             String correo = jwtService.extraerCorreo(token);
-            String rol = jwtService.extraerRol(token);
+            String rol = normalizarRol(jwtService.extraerRol(token));
 
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                     correo, null, List.of(new SimpleGrantedAuthority("ROLE_" + rol))
@@ -50,5 +50,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(request, response);
+    }
+
+    /**
+     * Deja el rol como "DOCENTE" o "ESTUDIANTE" aunque en la BD haya quedado con espacios,
+     * saltos de línea, minúsculas o el prefijo "ROLE_". Sin esto, un rol guardado como
+     * "DOCENTE" + salto de línea daba la autoridad "ROLE_DOCENTE\n" y
+     * {@code @PreAuthorize("hasRole('DOCENTE')")} respondía 403.
+     */
+    static String normalizarRol(String rol) {
+        if (rol == null) {
+            return "";
+        }
+        String limpio = rol.replaceAll("\\s+", "").toUpperCase();
+        return limpio.startsWith("ROLE_") ? limpio.substring(5) : limpio;
     }
 }

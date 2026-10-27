@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. "
+url: http://localhost:8080/api/docente/preguntas/1
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 9000

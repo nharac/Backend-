@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. "
+url: http://localhost:8080/api/docente/respuestas/1/ocultar
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 14000

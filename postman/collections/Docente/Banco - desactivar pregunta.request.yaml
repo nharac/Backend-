@@ -1,0 +1,12 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. Con activa=true se vuelve a activar."
+url: http://localhost:8080/api/docente/preguntas/46/estado
+method: PATCH
+body:
+  type: json
+  content: "{\n  \"activa\": false\n}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 12000

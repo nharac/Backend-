@@ -1,0 +1,12 @@
+$kind: http-request
+description: "passwordActual y passwordNueva son opcionales (solo para cambiar contraseña)."
+url: http://localhost:8080/api/auth/perfil
+method: PUT
+body:
+  type: json
+  content: "{\n  \"nombre\": \"Maria Lopez\",\n  \"passwordActual\": \"miPassword123\",\n  \"passwordNueva\": \"NuevaClave#2026\"\n}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 4000

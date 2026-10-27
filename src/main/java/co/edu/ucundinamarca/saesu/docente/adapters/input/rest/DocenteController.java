@@ -1,5 +1,7 @@
 package co.edu.ucundinamarca.saesu.docente.adapters.input.rest;
 
+import co.edu.ucundinamarca.saesu.docente.application.dto.response.ContenidoOcultoResponse;
+import co.edu.ucundinamarca.saesu.docente.application.service.ModeracionForoService;
 import co.edu.ucundinamarca.saesu.docente.ports.input.GestionDocenteUseCase;
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.PublicacionResumenResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,9 +21,11 @@ import java.util.List;
 public class DocenteController {
 
     private final GestionDocenteUseCase gestionDocenteUseCase;
+    private final ModeracionForoService moderacionService;
 
-    public DocenteController(GestionDocenteUseCase gestionDocenteUseCase) {
+    public DocenteController(GestionDocenteUseCase gestionDocenteUseCase, ModeracionForoService moderacionService) {
         this.gestionDocenteUseCase = gestionDocenteUseCase;
+        this.moderacionService = moderacionService;
     }
 
     @Operation(summary = "Listar publicaciones sin respuesta oficial")
@@ -42,5 +46,43 @@ public class DocenteController {
     public ResponseEntity<Void> quitarOficial(@PathVariable Long id) {
         gestionDocenteUseCase.quitarRespuestaOficial(id);
         return ResponseEntity.ok().build();
+    }
+
+    // ============================================
+    // Moderación del foro
+    // ============================================
+
+    @Operation(summary = "Contenido del foro ocultado por docentes")
+    @GetMapping("/moderacion")
+    public List<ContenidoOcultoResponse> contenidoOculto() {
+        return moderacionService.listarOculto();
+    }
+
+    @Operation(summary = "Ocultar una respuesta del foro")
+    @PostMapping("/respuestas/{id}/ocultar")
+    public ResponseEntity<Void> ocultarRespuesta(@PathVariable Long id, Authentication auth) {
+        moderacionService.ocultarRespuesta(id, auth.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Restaurar una respuesta oculta")
+    @DeleteMapping("/respuestas/{id}/ocultar")
+    public ResponseEntity<Void> restaurarRespuesta(@PathVariable Long id) {
+        moderacionService.restaurarRespuesta(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Ocultar una publicación del foro")
+    @PostMapping("/publicaciones/{id}/ocultar")
+    public ResponseEntity<Void> ocultarPublicacion(@PathVariable Long id, Authentication auth) {
+        moderacionService.ocultarPublicacion(id, auth.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Restaurar una publicación oculta")
+    @DeleteMapping("/publicaciones/{id}/ocultar")
+    public ResponseEntity<Void> restaurarPublicacion(@PathVariable Long id) {
+        moderacionService.restaurarPublicacion(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. Progreso de cada estudiante y si está en riesgo."
+url: http://localhost:8080/api/docente/estudiantes
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 5000

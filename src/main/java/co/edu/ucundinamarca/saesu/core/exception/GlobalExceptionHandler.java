@@ -5,6 +5,7 @@ import co.edu.ucundinamarca.saesu.practica.domain.exception.LimiteChatExcedidoEx
 import co.edu.ucundinamarca.saesu.practica.domain.exception.OpcionInvalidaException;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.PreguntaNoEncontradaException;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.ErrorResponse;
+import co.edu.ucundinamarca.saesu.usuario.domain.exception.ContrasenaIncorrectaException;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.CorreoYaRegistradoException;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.CredencialesInvalidasException;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.UsuarioNoEncontradoException;
@@ -33,6 +34,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CredencialesInvalidasException.class)
     public ResponseEntity<ErrorResponse> handleCredenciales(CredencialesInvalidasException ex, HttpServletRequest req) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), req.getRequestURI());
+    }
+
+    @ExceptionHandler(ContrasenaIncorrectaException.class)
+    public ResponseEntity<ErrorResponse> handleContrasenaIncorrecta(ContrasenaIncorrectaException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), req.getRequestURI());
     }
 
     @ExceptionHandler(UsuarioNoEncontradoException.class)
@@ -80,13 +86,47 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, mensaje, req.getRequestURI());
     }
 
+    /** Datos inválidos (ej. imagen que no es JPG/PNG o URL de imagen ajena). */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleArgumentoInvalido(IllegalArgumentException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), req.getRequestURI());
+    }
+
+    /** Archivo más grande que spring.servlet.multipart.max-file-size. */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleArchivoGrande(Exception ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo es demasiado grande", req.getRequestURI());
+    }
+
+    // ============================================
+    // Excepciones del módulo foro
+    // ============================================
+
+    @ExceptionHandler({
+            co.edu.ucundinamarca.saesu.foro.domain.exception.PublicacionNoEncontradaException.class,
+            co.edu.ucundinamarca.saesu.foro.domain.exception.RespuestaNoEncontradaException.class
+    })
+    public ResponseEntity<ErrorResponse> handleForoNoEncontrado(RuntimeException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), req.getRequestURI());
+    }
+
+    /** Rol sin permiso (ej. un estudiante llamando a /api/docente/**): 403 en vez de 500. */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccesoDenegado(Exception ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta acción", req.getRequestURI());
+    }
+
     // ============================================
     // Fallback
     // ============================================
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest req) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), req.getRequestURI());
+        // El detalle queda en los logs; al cliente no se le muestran mensajes internos
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
+                .error("Error no controlado en {}", req.getRequestURI(), ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Ocurrió un error inesperado. Intenta de nuevo.", req.getRequestURI());
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String mensaje, String path) {

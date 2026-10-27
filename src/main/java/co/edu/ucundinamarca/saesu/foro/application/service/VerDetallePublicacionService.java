@@ -27,6 +27,8 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
     private final RespuestaRepositoryPort respuestaRepository;
     private final UsuarioRepositoryPort usuarioRepository;
 
+    static final String CONTENIDO_OCULTO = "Esta respuesta fue ocultada por un docente.";
+
     @Override
     public PublicacionDetalleResponse verDetalle(Long publicacionId) {
         Publicacion publicacion = publicacionRepository.buscarPorId(publicacionId)
@@ -60,10 +62,12 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
                         r -> new RespuestaResponse(
                                 r.getId(),
                                 construirAutor(r.getAutorId()),
-                                r.getContenido(),
-                                Boolean.TRUE.equals(r.getEsOficial()),
+                                // Moderación: se conserva el lugar en el hilo, pero no el contenido
+                                r.isOculta() ? CONTENIDO_OCULTO : r.getContenido(),
+                                !r.isOculta() && Boolean.TRUE.equals(r.getEsOficial()),
                                 r.getFechaCreacion(),
-                                new ArrayList<>()
+                                new ArrayList<>(),
+                                r.isOculta()
                         )
                 ));
 

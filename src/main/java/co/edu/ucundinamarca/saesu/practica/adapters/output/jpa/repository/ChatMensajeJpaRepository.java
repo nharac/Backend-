@@ -23,7 +23,7 @@ public interface ChatMensajeJpaRepository extends JpaRepository<ChatMensajeEntit
      */
     @Query("""
         SELECT c FROM ChatMensajeEntity c
-        WHERE c.usuarioId = :usuarioId AND c.preguntaId IS NULL
+        WHERE c.usuarioId = :usuarioId AND c.preguntaId IS NULL AND c.oculto = false
         ORDER BY c.fechaHora DESC
         """)
     List<ChatMensajeEntity> historialLibre(@Param("usuarioId") Long usuarioId, Pageable pageable);
@@ -33,7 +33,7 @@ public interface ChatMensajeJpaRepository extends JpaRepository<ChatMensajeEntit
      */
     @Query("""
         SELECT c FROM ChatMensajeEntity c
-        WHERE c.usuarioId = :usuarioId AND c.preguntaId = :preguntaId
+        WHERE c.usuarioId = :usuarioId AND c.preguntaId = :preguntaId AND c.oculto = false
         ORDER BY c.fechaHora DESC
         """)
     List<ChatMensajeEntity> historialPorPregunta(
@@ -57,17 +57,18 @@ public interface ChatMensajeJpaRepository extends JpaRepository<ChatMensajeEntit
     );
 
     /**
-     * Elimina el historial del chat libre de un usuario.
+     * "Borra" el historial del chat libre: lo oculta, pero los mensajes
+     * siguen contando para el límite diario (contarMensajesUsuarioDesde no filtra ocultos).
      */
     @Modifying
-    @Query("DELETE FROM ChatMensajeEntity c WHERE c.usuarioId = :usuarioId AND c.preguntaId IS NULL")
+    @Query("UPDATE ChatMensajeEntity c SET c.oculto = true WHERE c.usuarioId = :usuarioId AND c.preguntaId IS NULL")
     void eliminarHistorialLibre(@Param("usuarioId") Long usuarioId);
 
     /**
-     * Elimina el historial del chat de una pregunta.
+     * "Borra" el historial del chat de una pregunta (lo oculta, ver arriba).
      */
     @Modifying
-    @Query("DELETE FROM ChatMensajeEntity c WHERE c.usuarioId = :usuarioId AND c.preguntaId = :preguntaId")
+    @Query("UPDATE ChatMensajeEntity c SET c.oculto = true WHERE c.usuarioId = :usuarioId AND c.preguntaId = :preguntaId")
     void eliminarHistorialPorPregunta(
             @Param("usuarioId") Long usuarioId,
             @Param("preguntaId") Long preguntaId

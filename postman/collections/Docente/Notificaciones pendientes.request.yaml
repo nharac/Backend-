@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. Publicaciones sin respuesta oficial, de la más antigua a la más reciente."
+url: http://localhost:8080/api/docente/notificaciones
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 1000
