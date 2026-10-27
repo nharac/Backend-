@@ -21,25 +21,28 @@ public class PuntosService {
         this.usuarioRepository = usuarioRepository;
     }
 
-        @Transactional
+    @Transactional
     public void otorgarPuntos(Long usuarioId, int cantidad, String motivo) {
         UsuarioEntity usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // 1. Guardar el historial de los puntos base (ej. 10 por responder)
+        // 1. Guardar el historial de los puntos base
         guardarHistorial(usuario, cantidad, motivo);
 
-        // 2. Lógica de Racha y Puntos Extra
+        // 2. Lógica de Racha (Solo se ejecuta si el estudiante hace una acción que da puntos)
         LocalDate hoy = LocalDate.now();
         if (usuario.getUltimaFechaPractica() == null || !usuario.getUltimaFechaPractica().equals(hoy)) {
             
+            // Si su última práctica fue AYER, aumentamos la racha y le damos 5 puntos extra
             if (usuario.getUltimaFechaPractica() != null && usuario.getUltimaFechaPractica().equals(hoy.minusDays(1))) {
                 usuario.setRachaActual(usuario.getRachaActual() + 1);
-                // BONUS: Por mantener la racha, le damos 5 puntos extra
                 guardarHistorial(usuario, 5, "Bonus por mantener la racha diaria");
-            } else {
+            } 
+            // Si no fue ayer (o es su primera vez), la racha vuelve a 1
+            else {
                 usuario.setRachaActual(1);
             }
+            
             usuario.setUltimaFechaPractica(hoy);
             usuarioRepository.save(usuario);
         }
@@ -52,6 +55,5 @@ public class PuntosService {
         historial.setMotivo(motivo);
         historial.setFecha(LocalDateTime.now());
         puntosRepository.save(historial);
-    
     }
 }
