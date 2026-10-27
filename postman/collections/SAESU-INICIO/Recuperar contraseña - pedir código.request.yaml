@@ -1,0 +1,8 @@
+$kind: http-request
+description: "Público. Envía un código de 6 dígitos al correo (vence en 15 min). Responde igual exista o no la cuenta."
+url: http://localhost:8080/api/auth/recuperar
+method: POST
+body:
+  type: json
+  content: "{\n  \"correo\": \"maria3@test.com\"\n}"
+order: 7000

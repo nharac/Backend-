@@ -18,6 +18,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import co.edu.ucundinamarca.saesu.usuario.application.dto.request.RecuperarPasswordRequest;
+import co.edu.ucundinamarca.saesu.usuario.application.dto.request.RestablecerPasswordRequest;
+import co.edu.ucundinamarca.saesu.usuario.application.service.RecuperarPasswordService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -33,13 +36,16 @@ public class AuthController {
     // NUEVAS DEPENDENCIAS
     private final JwtService jwtService;
     private final UsuarioRepositoryPort usuarioRepository;
+    private final RecuperarPasswordService recuperarPasswordService;
 
     public AuthController(RegistrarUsuarioUseCase registrarUsuarioUseCase,
                           LoginUseCase loginUseCase,
                           ObtenerPerfilUseCase obtenerPerfilUseCase,
                           ActualizarPerfilUseCase actualizarPerfilUseCase,
                           JwtService jwtService,
-                          UsuarioRepositoryPort usuarioRepository) {
+                          UsuarioRepositoryPort usuarioRepository,
+                          RecuperarPasswordService recuperarPasswordService) {
+        this.recuperarPasswordService = recuperarPasswordService;
         this.registrarUsuarioUseCase = registrarUsuarioUseCase;
         this.loginUseCase = loginUseCase;
         this.obtenerPerfilUseCase = obtenerPerfilUseCase;
@@ -106,5 +112,26 @@ public class AuthController {
                 nuevoToken,
                 refreshToken // Devolvemos el mismo refresh token
         ));
+    }
+
+    // ============================================
+    // Recuperación de contraseña (públicos, con el límite de 10 por minuto de /api/auth)
+    // ============================================
+
+    @Operation(summary = "Solicitar código de recuperación",
+            description = "Si el correo está registrado, envía un código de 6 dígitos que vence en 15 minutos. "
+                    + "La respuesta es la misma exista o no la cuenta.")
+    @PostMapping("/recuperar")
+    public ResponseEntity<java.util.Map<String, String>> recuperar(@Valid @RequestBody RecuperarPasswordRequest request) {
+        recuperarPasswordService.solicitar(request.correo());
+        return ResponseEntity.ok(java.util.Map.of("mensaje",
+                "Si el correo está registrado, te enviamos un código para restablecer tu contraseña."));
+    }
+
+    @Operation(summary = "Restablecer contraseña con el código recibido")
+    @PostMapping("/restablecer")
+    public ResponseEntity<java.util.Map<String, String>> restablecer(@Valid @RequestBody RestablecerPasswordRequest request) {
+        recuperarPasswordService.restablecer(request);
+        return ResponseEntity.ok(java.util.Map.of("mensaje", "Tu contraseña fue actualizada. Ya puedes iniciar sesión."));
     }
 }

@@ -1,6 +1,6 @@
 $kind: http-request
-description: "Top 10 de estudiantes con puntos > 0."
-url: http://localhost:8080/api/ranking
+description: "Top 10 de estudiantes con puntos > 0. periodo = total (por defecto), semana (desde el lunes) o mes (desde el día 1), con la hora de Colombia."
+url: http://localhost:8080/api/ranking?periodo=semana
 method: GET
 auth:
   type: bearer
