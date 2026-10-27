@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.foro.application.service;
 
+import co.edu.ucundinamarca.saesu.core.storage.StorageService;
 import co.edu.ucundinamarca.saesu.foro.application.dto.request.CrearPublicacionRequest;
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.AutorResponse;
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.PublicacionDetalleResponse;
@@ -21,12 +22,20 @@ public class CrearPublicacionService implements CrearPublicacionUseCase {
 
     private final PublicacionRepositoryPort publicacionRepository;
     private final UsuarioRepositoryPort usuarioRepository;
+    private final StorageService storageService;
 
     @Override
     @Transactional
     public PublicacionDetalleResponse crear(CrearPublicacionRequest request, String correoAutor) {
         Usuario autor = usuarioRepository.buscarPorCorreo(correoAutor)
                 .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
+        // La imagen debe haberse subido antes a POST /api/foro/imagenes (nuestro bucket de S3)
+        String imagenUrl = request.getImagenUrl() == null || request.getImagenUrl().isBlank()
+                ? null : request.getImagenUrl().trim();
+        if (imagenUrl != null && !storageService.esUrlPropia(imagenUrl)) {
+            throw new IllegalArgumentException("La imagen debe subirse primero con POST /api/foro/imagenes");
+        }
 
         Publicacion publicacion = new Publicacion(
                 null,
@@ -37,7 +46,7 @@ public class CrearPublicacionService implements CrearPublicacionUseCase {
                 LocalDateTime.now(),
                 LocalDateTime.now(),
                 true,
-                request.getImagenUrl() // <-- NUEVO
+                imagenUrl
         );
 
         Publicacion guardada = publicacionRepository.guardar(publicacion);

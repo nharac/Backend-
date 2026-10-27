@@ -1,5 +1,7 @@
 package co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.adapter;
 
+import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.entity.UsuarioEntity;
+
 import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.mapper.UsuarioMapper;
 import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.repository.UsuarioJpaRepository;
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
@@ -31,7 +33,16 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
 
     @Override
     public Usuario guardar(Usuario usuario) {
-        return mapper.toDomain(repository.save(mapper.toEntity(usuario)));
+        UsuarioEntity entity = mapper.toEntity(usuario);
+        // La racha no está en el modelo de dominio: al actualizar un usuario existente
+        // (nombre, contraseña, foto) se conserva la que ya tenía en vez de reiniciarla a 0.
+        if (usuario.getId() != null) {
+            repository.findById(usuario.getId()).ifPresent(actual -> {
+                entity.setRachaActual(actual.getRachaActual());
+                entity.setUltimaFechaPractica(actual.getUltimaFechaPractica());
+            });
+        }
+        return mapper.toDomain(repository.save(entity));
     }
 
     @Override

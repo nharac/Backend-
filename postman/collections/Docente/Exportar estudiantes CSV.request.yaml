@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. Devuelve un CSV (separado por ;) para abrir en Excel."
+url: http://localhost:8080/api/docente/estudiantes/exportar
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 7000

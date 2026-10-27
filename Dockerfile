@@ -27,4 +27,5 @@ COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
 # Comando para arrancar la aplicación
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Límite de memoria para servidores pequeños (ej. AWS con 2 GB de RAM)
+ENTRYPOINT ["java", "-Xmx512m", "-XX:+UseSerialGC", "-jar", "app.jar"]

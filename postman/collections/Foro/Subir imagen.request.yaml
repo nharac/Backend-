@@ -1,0 +1,15 @@
+$kind: http-request
+description: "multipart/form-data, campo 'archivo' (jpg, png, webp o gif; máx. 5 MB). Devuelve { url }."
+url: http://localhost:8080/api/foro/imagenes
+method: POST
+body:
+  type: formdata
+  content:
+    - key: archivo
+      type: file
+      value: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 6000

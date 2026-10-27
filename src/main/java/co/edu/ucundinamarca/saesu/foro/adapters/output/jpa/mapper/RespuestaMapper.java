@@ -18,7 +18,8 @@ public class RespuestaMapper {
                 entity.getRespuestaPadreId(),
                 entity.getContenido(),
                 entity.getEsOficial(),
-                entity.getFechaCreacion()
+                entity.getFechaCreacion(),
+                Boolean.TRUE.equals(entity.getOculta())
         );
     }
 

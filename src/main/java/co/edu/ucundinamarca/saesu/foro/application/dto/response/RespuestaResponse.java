@@ -24,4 +24,10 @@ public class RespuestaResponse {
     private boolean esOficial;
     private LocalDateTime fechaCreacion;
     private List<RespuestaResponse> respuestasHijas;   // lista vacía si no tiene hijas
+    private boolean oculta;                            // ocultada por un docente (el contenido no se envía)
+
+    public RespuestaResponse(Long id, AutorResponse autor, String contenido, boolean esOficial,
+                             LocalDateTime fechaCreacion, List<RespuestaResponse> respuestasHijas) {
+        this(id, autor, contenido, esOficial, fechaCreacion, respuestasHijas, false);
+    }
 }

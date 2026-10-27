@@ -50,4 +50,8 @@ public class RespuestaEntity {
 
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
+
+    /** Oculta por un docente (V14). Solo lectura aquí: se cambia con SQL desde el módulo docente. */
+    @Column(name = "oculta", insertable = false, updatable = false)
+    private Boolean oculta;
 }

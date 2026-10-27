@@ -1,0 +1,12 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. 4 opciones A-D y exactamente una correcta."
+url: http://localhost:8080/api/docente/preguntas
+method: POST
+body:
+  type: json
+  content: "{\n  \"tema\": \"derivadas\",\n  \"enunciado\": \"¿Cuál es la derivada de f(x) = 7x?\",\n  \"dificultad\": \"basico\",\n  \"pista\": \"La derivada de ax es a.\",\n  \"opciones\": [\n    {\n      \"letra\": \"A\",\n      \"texto\": \"7\",\n      \"esCorrecta\": true\n    },\n    {\n      \"letra\": \"B\",\n      \"texto\": \"7x\",\n      \"esCorrecta\": false\n    },\n    {\n      \"letra\": \"C\",\n      \"texto\": \"0\",\n      \"esCorrecta\": false\n    },\n    {\n      \"letra\": \"D\",\n      \"texto\": \"x\",\n      \"esCorrecta\": false\n    }\n  ]\n}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 10000

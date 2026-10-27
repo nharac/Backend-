@@ -1,4 +1,12 @@
 $kind: http-request
-url: ""
-method: GET
+description: "Otorga puntos al estudiante (máx. 3 por día, no en su propia publicación)."
+url: http://localhost:8080/api/foro/publicaciones/1/respuestas
+method: POST
+body:
+  type: json
+  content: "{\n  \"contenido\": \"Factoriza el numerador: (x-1)(x+1).\"\n}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
 order: 3000

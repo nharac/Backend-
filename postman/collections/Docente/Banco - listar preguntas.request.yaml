@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Requiere token de DOCENTE. Filtros opcionales: tema, dificultad, busqueda, estado (activas|inactivas|todas)."
+url: http://localhost:8080/api/docente/preguntas?tema=derivadas&estado=todas
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 8000

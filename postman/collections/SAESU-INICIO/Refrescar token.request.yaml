@@ -1,0 +1,8 @@
+$kind: http-request
+url: http://localhost:8080/api/auth/refresh?refreshToken=
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 6000

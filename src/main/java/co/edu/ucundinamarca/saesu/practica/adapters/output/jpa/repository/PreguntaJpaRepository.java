@@ -15,11 +15,22 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PreguntaJpaRepository extends JpaRepository<PreguntaEntity, Long> {
 
-    @Query("""
-        SELECT p FROM PreguntaEntity p
-        WHERE (:tema IS NULL OR p.tema = :tema)
-          AND (:dificultad IS NULL OR p.dificultad = :dificultad)
-        """)
+    // SQL nativo para filtrar por la columna "activa" (V14), que no está mapeada en la entidad:
+    // así, al guardar una pregunta con JPA, la base de datos aplica su valor por defecto (TRUE).
+    @Query(value = """
+        SELECT p.* FROM preguntas p
+        WHERE p.activa = TRUE
+          AND (CAST(:tema AS VARCHAR) IS NULL OR p.tema = CAST(:tema AS VARCHAR))
+          AND (CAST(:dificultad AS VARCHAR) IS NULL OR p.dificultad = CAST(:dificultad AS VARCHAR))
+        ORDER BY p.id
+        """,
+        countQuery = """
+        SELECT COUNT(*) FROM preguntas p
+        WHERE p.activa = TRUE
+          AND (CAST(:tema AS VARCHAR) IS NULL OR p.tema = CAST(:tema AS VARCHAR))
+          AND (CAST(:dificultad AS VARCHAR) IS NULL OR p.dificultad = CAST(:dificultad AS VARCHAR))
+        """,
+        nativeQuery = true)
     Page<PreguntaEntity> buscarConFiltros(
             @Param("tema") String tema,
             @Param("dificultad") String dificultad,

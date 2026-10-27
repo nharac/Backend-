@@ -1,4 +1,12 @@
 $kind: http-request
-url: ""
-method: GET
+description: "imagenUrl es opcional; debe ser una URL devuelta por 'Subir imagen' (bucket propio)."
+url: http://localhost:8080/api/foro/publicaciones
+method: POST
+body:
+  type: json
+  content: "{\n  \"titulo\": \"¿Cómo resuelvo este límite?\",\n  \"contenido\": \"No entiendo el límite de (x²-1)/(x-1) cuando x→1\",\n  \"tema\": \"limites\",\n  \"imagenUrl\": null\n}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
 order: 1000

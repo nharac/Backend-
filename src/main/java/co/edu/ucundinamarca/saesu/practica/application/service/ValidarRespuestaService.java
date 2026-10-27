@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.practica.application.service;
 
+import co.edu.ucundinamarca.saesu.gamificacion.application.service.LogrosService;
 import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService; // <-- NUEVO IMPORT
 import co.edu.ucundinamarca.saesu.practica.application.dto.response.ValidacionResponse;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.OpcionInvalidaException;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Caso de uso: validar la respuesta seleccionada.
@@ -31,6 +33,16 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
     private final RespuestaEstudianteRepositoryPort respuestaRepository;
     private final UsuarioConsultaPort usuarioConsultaPort;
     private final PuntosService puntosService; // <-- NUEVO
+    private final LogrosService logrosService;
+
+    /** Puntaje de un acierto: empieza en 20 y baja 5 por cada fallo, mínimo 5. */
+    static final int PUNTOS_MAXIMOS = 20;
+    static final int PENALIZACION_POR_FALLO = 5;
+    static final int PUNTOS_MINIMOS = 5;
+
+    static int puntosSegunFallos(long fallos) {
+        return (int) Math.max(PUNTOS_MAXIMOS - PENALIZACION_POR_FALLO * fallos, PUNTOS_MINIMOS);
+    }
 
     @Override
     @Transactional
@@ -56,7 +68,14 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
         // 4. Obtener el ID del usuario mediante el puerto propio
         Long usuarioId = usuarioConsultaPort.obtenerIdPorCorreo(correoEstudiante);
 
-        // 5. Registrar el intento
+        // 5. Historial de esta pregunta ANTES de registrar el intento actual
+        List<RespuestaEstudiante> previos = respuestaRepository.listarPorUsuario(usuarioId).stream()
+                .filter(r -> preguntaId.equals(r.getPreguntaId()))
+                .toList();
+        boolean yaResuelta = previos.stream().anyMatch(r -> Boolean.TRUE.equals(r.getEsCorrecta()));
+        long fallosPrevios = previos.stream().filter(r -> !Boolean.TRUE.equals(r.getEsCorrecta())).count();
+
+        // 6. Registrar el intento
         RespuestaEstudiante intento = new RespuestaEstudiante(
                 null,
                 usuarioId,
@@ -67,27 +86,51 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
         );
         respuestaRepository.guardar(intento);
 
-        // 6. SI ES CORRECTA: Otorgar 20 puntos
+        // 7. Puntos: solo la primera vez que acierta la pregunta,
+        //    y valen menos por cada fallo anterior (20, 15, 10, 5...)
+        ValidacionResponse respuesta;
         if (esCorrecta) {
-            puntosService.otorgarPuntos(usuarioId, 20, "Acierto en práctica: " + pregunta.getTema().getValor());
-            
-            return new ValidacionResponse(
-                    true,
-                    opcionId,
-                    null,
-                    "¡Correcto! (+20 puntos)",
-                    true,
-                    false
-            );
+            if (yaResuelta) {
+                // Sin puntos, pero el día sí cuenta para la racha
+                puntosService.registrarActividad(usuarioId);
+                respuesta = new ValidacionResponse(
+                        true,
+                        opcionId,
+                        null,
+                        "¡Correcto! Ya habías resuelto esta pregunta (sin puntos extra)",
+                        true,
+                        false,
+                        0,
+                        0
+                );
+            } else {
+                int puntos = puntosSegunFallos(fallosPrevios);
+                puntosService.otorgarPuntos(usuarioId, puntos, "Acierto en práctica: " + pregunta.getTema().getValor());
+                respuesta = new ValidacionResponse(
+                        true,
+                        opcionId,
+                        null,
+                        "¡Correcto! (+" + puntos + " puntos)",
+                        true,
+                        false,
+                        puntos,
+                        0
+                );
+            }
+            // 8. ¿Desbloqueó algún logro con este acierto?
+            respuesta.setNuevosLogros(logrosService.evaluar(usuarioId));
         } else {
-            return new ValidacionResponse(
+            respuesta = new ValidacionResponse(
                     false,
                     null,
                     pregunta.getPista(),
                     "Incorrecto",
                     false,
-                    true
+                    true,
+                    0,
+                    yaResuelta ? 0 : puntosSegunFallos(fallosPrevios + 1)
             );
         }
+        return respuesta;
     }
 }

@@ -24,6 +24,13 @@ public class Respuesta {
     private String contenido;
     private Boolean esOficial;
     private LocalDateTime fechaCreacion;
+    private boolean oculta;          // ocultada por un docente (moderación)
+
+    /** Constructor sin el estado de moderación (respuestas nuevas: nunca están ocultas). */
+    public Respuesta(Long id, Long publicacionId, Long autorId, Long respuestaPadreId,
+                     String contenido, Boolean esOficial, LocalDateTime fechaCreacion) {
+        this(id, publicacionId, autorId, respuestaPadreId, contenido, esOficial, fechaCreacion, false);
+    }
 
     /**
      * Verifica si esta respuesta es hija de otra respuesta.

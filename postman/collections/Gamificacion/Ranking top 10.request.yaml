@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Top 10 de estudiantes con puntos > 0."
+url: http://localhost:8080/api/ranking
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 1000

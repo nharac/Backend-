@@ -21,6 +21,11 @@ public class PuntosService {
         this.usuarioRepository = usuarioRepository;
     }
 
+    /** Motivo con el que se registran los puntos del foro. */
+    public static final String MOTIVO_FORO = "Respondió en el foro";
+    /** Máximo de respuestas del foro que dan puntos por día (evita inflar el ranking con spam). */
+    public static final int MAX_RESPUESTAS_FORO_CON_PUNTOS_POR_DIA = 3;
+
     @Transactional
     public void otorgarPuntos(Long usuarioId, int cantidad, String motivo) {
         UsuarioEntity usuario = usuarioRepository.findById(usuarioId)
@@ -29,7 +34,48 @@ public class PuntosService {
         // 1. Guardar el historial de los puntos base
         guardarHistorial(usuario, cantidad, motivo);
 
-        // 2. Lógica de Racha (Solo se ejecuta si el estudiante hace una acción que da puntos)
+        // 2. Lógica de Racha y Puntos Extra
+        actualizarRacha(usuario);
+    }
+
+    /**
+     * Puntos por responder en el foro: +10, máximo 3 veces al día,
+     * y nada por responder en una publicación propia.
+     * @return true si se dieron puntos
+     */
+    @Transactional
+    public boolean otorgarPuntosForo(Long usuarioId, Long autorPublicacionId) {
+        if (usuarioId.equals(autorPublicacionId)) {
+            return false;
+        }
+        long hoy = puntosRepository.contarPorMotivoDesde(usuarioId, MOTIVO_FORO, LocalDate.now().atStartOfDay());
+        if (hoy >= MAX_RESPUESTAS_FORO_CON_PUNTOS_POR_DIA) {
+            return false;
+        }
+        otorgarPuntos(usuarioId, 10, MOTIVO_FORO);
+        return true;
+    }
+
+    /** Da los puntos solo si nunca se dieron con ese mismo motivo (ej. "Respuesta oficial #12"). */
+    @Transactional
+    public void otorgarPuntosUnaVez(Long usuarioId, int cantidad, String motivo) {
+        if (!puntosRepository.existePorMotivo(usuarioId, motivo)) {
+            otorgarPuntos(usuarioId, cantidad, motivo);
+        }
+    }
+
+    /**
+     * Cuenta el día para la racha sin dar puntos
+     * (ej. acertar una pregunta que ya estaba resuelta).
+     */
+    @Transactional
+    public void registrarActividad(Long usuarioId) {
+        UsuarioEntity usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        actualizarRacha(usuario);
+    }
+
+    private void actualizarRacha(UsuarioEntity usuario) {
         LocalDate hoy = LocalDate.now();
         if (usuario.getUltimaFechaPractica() == null || !usuario.getUltimaFechaPractica().equals(hoy)) {
             
