@@ -41,6 +41,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return Bucket.builder().addLimit(limite).build();
     }
 
+    /** Rutas públicas con el límite estricto (fuerza bruta de contraseñas y de códigos de recuperación). */
+    private static final java.util.Set<String> RUTAS_AUTH = java.util.Set.of(
+            "/api/auth/login", "/api/auth/registro", "/api/auth/recuperar", "/api/auth/restablecer");
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         // Swagger, actuator, etc. no cuentan
@@ -52,7 +56,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String uri = request.getRequestURI();
-        boolean esAuth = uri.equals("/api/auth/login") || uri.equals("/api/auth/registro");
+        boolean esAuth = RUTAS_AUTH.contains(uri);
         String clave = (esAuth ? "auth:" : "api:") + ipCliente(request);
         Bucket balde = baldes.get(clave, k -> nuevoBalde(esAuth ? LIMITE_AUTH : LIMITE_API));
 

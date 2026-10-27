@@ -1,0 +1,9 @@
+$kind: http-request
+description: "Puesto del estudiante que consulta aunque no esté en el top 10, puntos que le faltan para pasar al de arriba, racha vigente, puntos de hoy y de la semana y sus últimos 6 movimientos de puntos. periodo = total, semana o mes."
+url: http://localhost:8080/api/ranking/yo?periodo=semana
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 1500
