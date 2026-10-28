@@ -86,18 +86,15 @@ public class RankingJdbcAdapter implements RankingPort {
     }
 
     @Override
-    public long puntosDesde(Long usuarioId, LocalDateTime desde) {
-        Long n = jdbc.queryForObject(
-                "SELECT COALESCE(SUM(cantidad), 0) FROM puntos_historial WHERE usuario_id = ? AND fecha >= ?",
-                Long.class, usuarioId, ts(desde));
-        return n == null ? 0 : n;
-    }
-
-    @Override
-    public int rachaVigente(Long usuarioId) {
-        List<Integer> r = jdbc.query("SELECT " + RACHA + " AS racha FROM usuarios u WHERE u.id = ?",
-                (rs, i) -> rs.getInt("racha"), usuarioId);
-        return r.isEmpty() ? 0 : r.get(0);
+    public ResumenPuntos resumenPuntos(Long usuarioId, LocalDateTime inicioHoy, LocalDateTime inicioSemana) {
+        List<ResumenPuntos> r = jdbc.query("SELECT " + RACHA + " AS racha, "
+                        + "COALESCE((SELECT SUM(cantidad) FILTER (WHERE fecha >= ?) FROM puntos_historial WHERE usuario_id = u.id), 0) AS hoy, "
+                        + "COALESCE((SELECT SUM(cantidad) FILTER (WHERE fecha >= ?) FROM puntos_historial WHERE usuario_id = u.id), 0) AS semana, "
+                        + "COALESCE((SELECT SUM(cantidad) FROM puntos_historial WHERE usuario_id = u.id), 0) AS total "
+                        + "FROM usuarios u WHERE u.id = ?",
+                (rs, i) -> new ResumenPuntos(rs.getInt("racha"), rs.getLong("hoy"), rs.getLong("semana"), rs.getLong("total")),
+                ts(inicioHoy), ts(inicioSemana), usuarioId);
+        return r.isEmpty() ? new ResumenPuntos(0, 0, 0, 0) : r.get(0);
     }
 
     @Override

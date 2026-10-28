@@ -110,6 +110,20 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), req.getRequestURI());
     }
 
+    // ============================================
+    // Excepciones del módulo quiz
+    // ============================================
+
+    @ExceptionHandler(co.edu.ucundinamarca.saesu.quiz.domain.exception.QuizNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> handleQuizNoEncontrado(RuntimeException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), req.getRequestURI());
+    }
+
+    @ExceptionHandler(co.edu.ucundinamarca.saesu.quiz.domain.exception.QuizYaFinalizadoException.class)
+    public ResponseEntity<ErrorResponse> handleQuizYaFinalizado(RuntimeException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), req.getRequestURI());
+    }
+
     /** Rol sin permiso (ej. un estudiante llamando a /api/docente/**): 403 en vez de 500. */
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccesoDenegado(Exception ex, HttpServletRequest req) {

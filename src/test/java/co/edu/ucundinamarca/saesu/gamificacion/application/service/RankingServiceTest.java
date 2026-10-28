@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,6 +43,7 @@ class RankingServiceTest {
     @BeforeEach
     void setUp() {
         service = new RankingService(port, RELOJ);
+        lenient().when(port.resumenPuntos(any(), any(), any())).thenReturn(new RankingPort.ResumenPuntos(0, 0, 0, 0));
     }
 
     @Test
@@ -117,7 +119,6 @@ class RankingServiceTest {
     void sinPuntos() {
         when(port.posicionDe(eq(8L), any())).thenReturn(Optional.empty());
         when(port.participantes(any())).thenReturn(5L);
-        when(port.rachaVigente(8L)).thenReturn(0);
 
         MiPosicionResponse yo = service.miPosicion(8L, Periodo.MES);
 
@@ -131,14 +132,14 @@ class RankingServiceTest {
     @DisplayName("Mi posición: puntos de hoy desde la medianoche de Colombia y de la semana desde el lunes")
     void puntosHoyYSemana() {
         when(port.posicionDe(eq(1L), any())).thenReturn(Optional.empty());
-        when(port.puntosDesde(1L, LocalDateTime.of(2026, 10, 28, 5, 0))).thenReturn(20L);
-        when(port.puntosDesde(1L, LocalDateTime.of(2026, 10, 26, 5, 0))).thenReturn(45L);
-        when(port.puntosDesde(eq(1L), isNull())).thenReturn(195L);
+        when(port.resumenPuntos(1L, LocalDateTime.of(2026, 10, 28, 5, 0), LocalDateTime.of(2026, 10, 26, 5, 0)))
+                .thenReturn(new RankingPort.ResumenPuntos(3, 20, 45, 195));
         when(port.ultimosMovimientos(eq(1L), anyInt())).thenReturn(List.of(
                 new RankingPort.Movimiento(20, "Acierto en práctica: limites", LocalDateTime.of(2026, 10, 28, 20, 0))));
 
         MiPosicionResponse yo = service.miPosicion(1L, Periodo.TOTAL);
 
+        assertThat(yo.rachaActual()).isEqualTo(3);
         assertThat(yo.puntosHoy()).isEqualTo(20);
         assertThat(yo.puntosSemana()).isEqualTo(45);
         assertThat(yo.puntosTotales()).isEqualTo(195);

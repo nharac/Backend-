@@ -1,6 +1,7 @@
 package co.edu.ucundinamarca.saesu.gamificacion.application.service;
 
 import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc.LogrosJdbcRepository;
+import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc.LogrosJdbcRepository.Estadisticas;
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.LogroResponse;
 import co.edu.ucundinamarca.saesu.gamificacion.domain.model.Logro;
 import org.springframework.stereotype.Service;
@@ -36,46 +37,55 @@ public class LogrosService {
      */
     @Transactional
     public List<LogroResponse> evaluar(Long usuarioId) {
-        Map<String, OffsetDateTime> yaTiene = repositorio.obtenidos(usuarioId);
+        return evaluar(usuarioId, repositorio.obtenidos(usuarioId));
+    }
+
+    /** Todos los logros con su estado (primero evalúa, por si alguno se cumplió en el foro). */
+    @Transactional
+    public List<LogroResponse> listar(Long usuarioId) {
+        Map<String, OffsetDateTime> obtenidos = repositorio.obtenidos(usuarioId);
+        for (LogroResponse nuevo : evaluar(usuarioId, obtenidos)) {
+            obtenidos.put(nuevo.getCodigo(), nuevo.getFechaObtenido());
+        }
+        return Arrays.stream(Logro.values())
+                .map(l -> aRespuesta(l, obtenidos.containsKey(l.name()), obtenidos.get(l.name())))
+                .toList();
+    }
+
+    private List<LogroResponse> evaluar(Long usuarioId, Map<String, OffsetDateTime> yaTiene) {
         List<LogroResponse> nuevos = new ArrayList<>();
+        if (yaTiene.size() >= Logro.values().length) {
+            return nuevos; // ya los tiene todos: no hace falta consultar nada más
+        }
+        Estadisticas e = repositorio.estadisticas(usuarioId);
         for (Logro logro : Logro.values()) {
-            if (!yaTiene.containsKey(logro.name()) && cumple(logro, usuarioId) && repositorio.guardar(usuarioId, logro.name())) {
+            if (!yaTiene.containsKey(logro.name()) && cumple(logro, e) && repositorio.guardar(usuarioId, logro.name())) {
                 nuevos.add(aRespuesta(logro, true, OffsetDateTime.now()));
             }
         }
         return nuevos;
     }
 
-    /** Todos los logros con su estado (primero evalúa, por si alguno se cumplió en el foro). */
-    @Transactional
-    public List<LogroResponse> listar(Long usuarioId) {
-        evaluar(usuarioId);
-        Map<String, OffsetDateTime> obtenidos = repositorio.obtenidos(usuarioId);
-        return Arrays.stream(Logro.values())
-                .map(l -> aRespuesta(l, obtenidos.containsKey(l.name()), obtenidos.get(l.name())))
-                .toList();
-    }
-
-    private boolean cumple(Logro logro, Long u) {
+    private boolean cumple(Logro logro, Estadisticas e) {
         return switch (logro) {
-            case PRIMER_ACIERTO -> repositorio.contarAciertos(u) >= 1;
-            case A_LA_PRIMERA -> repositorio.contarAcertadasAlPrimerIntento(u) >= ACERTADAS_A_LA_PRIMERA;
-            case DOMINIO_LIMITES -> dominaTema(u, "limites");
-            case DOMINIO_DERIVADAS -> dominaTema(u, "derivadas");
-            case DOMINIO_INTEGRALES -> dominaTema(u, "integrales");
-            case RACHA_3 -> repositorio.rachaActual(u) >= 3;
-            case RACHA_7 -> repositorio.rachaActual(u) >= 7;
-            case CURIOSO -> repositorio.contarPublicaciones(u) >= 1;
-            case COLABORADOR -> repositorio.contarRespuestasForo(u) >= RESPUESTAS_COLABORADOR;
-            case RESPUESTA_DE_ORO -> repositorio.contarRespuestasOficiales(u) >= 1;
-            case PUNTOS_500 -> repositorio.puntosTotales(u) >= PUNTOS_CONSTANTE;
+            case PRIMER_ACIERTO -> e.aciertos() >= 1;
+            case A_LA_PRIMERA -> e.acertadasAlPrimerIntento() >= ACERTADAS_A_LA_PRIMERA;
+            case DOMINIO_LIMITES -> dominaTema(e, "limites");
+            case DOMINIO_DERIVADAS -> dominaTema(e, "derivadas");
+            case DOMINIO_INTEGRALES -> dominaTema(e, "integrales");
+            case RACHA_3 -> e.racha() >= 3;
+            case RACHA_7 -> e.racha() >= 7;
+            case CURIOSO -> e.publicaciones() >= 1;
+            case COLABORADOR -> e.respuestasForo() >= RESPUESTAS_COLABORADOR;
+            case RESPUESTA_DE_ORO -> e.respuestasOficiales() >= 1;
+            case PUNTOS_500 -> e.puntos() >= PUNTOS_CONSTANTE;
         };
     }
 
     /** Acertó (alguna vez) todas las preguntas que hay del tema. */
-    private boolean dominaTema(Long u, String tema) {
-        long total = repositorio.contarPreguntasDelTema(tema);
-        return total > 0 && repositorio.contarResueltasDelTema(u, tema) >= total;
+    private boolean dominaTema(Estadisticas e, String tema) {
+        long total = e.preguntasDelTema(tema);
+        return total > 0 && e.resueltasDelTema(tema) >= total;
     }
 
     private LogroResponse aRespuesta(Logro l, boolean obtenido, OffsetDateTime fecha) {

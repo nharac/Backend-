@@ -28,10 +28,11 @@ public interface RankingPort {
     /** Estudiantes con más de 0 puntos en el periodo. */
     long participantes(LocalDateTime desde);
 
-    long puntosDesde(Long usuarioId, LocalDateTime desde);
+    /** Racha vigente (0 si no practicó ni hoy ni ayer) y puntos de hoy, de la semana y totales. */
+    record ResumenPuntos(int racha, long hoy, long semana, long total) {}
 
-    /** Racha vigente: 0 si no practicó ni hoy ni ayer. */
-    int rachaVigente(Long usuarioId);
+    /** Todo en una consulta: antes eran cuatro idas a la base de datos. */
+    ResumenPuntos resumenPuntos(Long usuarioId, LocalDateTime inicioHoy, LocalDateTime inicioSemana);
 
     List<Movimiento> ultimosMovimientos(Long usuarioId, int limite);
 }

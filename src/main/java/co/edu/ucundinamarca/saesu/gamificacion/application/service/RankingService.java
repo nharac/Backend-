@@ -82,6 +82,9 @@ public class RankingService {
                 .map(m -> new MiPosicionResponse.Movimiento(m.cantidad(), m.motivo(), m.fecha()))
                 .toList();
 
+        RankingPort.ResumenPuntos resumen = port.resumenPuntos(usuarioId,
+                inicioDe(LocalDate.now(clock.withZone(COLOMBIA))), desde(Periodo.SEMANA));
+
         return new MiPosicionResponse(
                 periodo.name().toLowerCase(Locale.ROOT),
                 lugar,
@@ -89,10 +92,10 @@ public class RankingService {
                 participantes,
                 paraSubir,
                 siguiente,
-                port.rachaVigente(usuarioId),
-                port.puntosDesde(usuarioId, inicioDe(LocalDate.now(clock.withZone(COLOMBIA)))),
-                port.puntosDesde(usuarioId, desde(Periodo.SEMANA)),
-                port.puntosDesde(usuarioId, null),
+                resumen.racha(),
+                resumen.hoy(),
+                resumen.semana(),
+                resumen.total(),
                 movimientos);
     }
 

@@ -33,8 +33,9 @@ public class ObtenerPerfilService implements ObtenerPerfilUseCase {
                 usuario.getFechaRegistro()
         );
         respuesta.setFotoPerfilUrl(usuario.getFotoPerfilUrl());
-        respuesta.setRachaActual((int) gamificacion.rachaActual(usuario.getId()));
-        respuesta.setPuntosTotales(gamificacion.puntosTotales(usuario.getId()));
+        long[] rachaYPuntos = gamificacion.rachaYPuntos(usuario.getId());
+        respuesta.setRachaActual((int) rachaYPuntos[0]);
+        respuesta.setPuntosTotales(rachaYPuntos[1]);
         return respuesta;
     }
 }

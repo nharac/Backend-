@@ -13,10 +13,13 @@ import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,7 +32,12 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
 
     static final String CONTENIDO_OCULTO = "Esta respuesta fue ocultada por un docente.";
 
+    /**
+     * Una sola transacción y los autores en una sola consulta: antes se buscaba el autor
+     * de cada respuesta por separado (una ida a la base de datos por respuesta).
+     */
     @Override
+    @Transactional(readOnly = true)
     public PublicacionDetalleResponse verDetalle(Long publicacionId) {
         Publicacion publicacion = publicacionRepository.buscarPorId(publicacionId)
                 .orElseThrow(() -> new PublicacionNoEncontradaException(
@@ -39,9 +47,14 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
             throw new PublicacionNoEncontradaException("Publicación no encontrada o eliminada");
         }
 
-        AutorResponse autor = construirAutor(publicacion.getAutorId());
         List<Respuesta> todasLasRespuestas = respuestaRepository.listarPorPublicacion(publicacionId);
-        List<RespuestaResponse> respuestasAnidadas = armarArbol(todasLasRespuestas);
+        Set<Long> ids = new HashSet<>();
+        ids.add(publicacion.getAutorId());
+        todasLasRespuestas.forEach(r -> ids.add(r.getAutorId()));
+        Map<Long, Usuario> autores = usuarioRepository.buscarPorIds(ids);
+
+        AutorResponse autor = construirAutor(autores, publicacion.getAutorId());
+        List<RespuestaResponse> respuestasAnidadas = armarArbol(todasLasRespuestas, autores);
 
         return new PublicacionDetalleResponse(
                 publicacion.getId(),
@@ -55,13 +68,13 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
         );
     }
 
-    private List<RespuestaResponse> armarArbol(List<Respuesta> respuestas) {
+    private List<RespuestaResponse> armarArbol(List<Respuesta> respuestas, Map<Long, Usuario> autores) {
         Map<Long, RespuestaResponse> mapaRespuestas = respuestas.stream()
                 .collect(Collectors.toMap(
                         Respuesta::getId,
                         r -> new RespuestaResponse(
                                 r.getId(),
-                                construirAutor(r.getAutorId()),
+                                construirAutor(autores, r.getAutorId()),
                                 // Moderación: se conserva el lugar en el hilo, pero no el contenido
                                 r.isOculta() ? CONTENIDO_OCULTO : r.getContenido(),
                                 !r.isOculta() && Boolean.TRUE.equals(r.getEsOficial()),
@@ -90,23 +103,11 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
         return raices;
     }
 
-    private AutorResponse construirAutor(Long autorId) {
-        Usuario usuario = usuarioRepository.buscarPorId(autorId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + autorId));
-        return new AutorResponse(
-                usuario.getId(),
-                usuario.getNombre(),
-                calcularIniciales(usuario.getNombre()),
-                usuario.getRol()
-        );
-    }
-
-    private String calcularIniciales(String nombre) {
-        if (nombre == null || nombre.isBlank()) return "?";
-        String[] partes = nombre.trim().split("\\s+");
-        if (partes.length == 1) {
-            return partes[0].substring(0, 1).toUpperCase();
+    private AutorResponse construirAutor(Map<Long, Usuario> autores, Long autorId) {
+        Usuario usuario = autores.get(autorId);
+        if (usuario == null) {
+            throw new RuntimeException("Usuario no encontrado con id: " + autorId);
         }
-        return (partes[0].substring(0, 1) + partes[partes.length - 1].substring(0, 1)).toUpperCase();
+        return ResumenForo.autor(usuario);
     }
 }
