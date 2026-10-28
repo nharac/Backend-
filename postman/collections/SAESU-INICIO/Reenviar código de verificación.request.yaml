@@ -1,0 +1,8 @@
+$kind: http-request
+description: "Público. Envía un código nuevo si hay un registro pendiente para ese correo (máximo uno por minuto). Siempre responde 200 con el mismo mensaje."
+url: http://localhost:8080/api/auth/reenviar-verificacion
+method: POST
+body:
+  type: json
+  content: "{\n  \"correo\": \"estudiante@ucundinamarca.edu.co\"\n}"
+order: 9500

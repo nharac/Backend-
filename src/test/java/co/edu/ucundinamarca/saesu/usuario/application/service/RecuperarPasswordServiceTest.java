@@ -170,4 +170,29 @@ class RecuperarPasswordServiceTest {
             assertThat(RecuperarPasswordService.generarCodigo()).matches("\\d{6}");
         }
     }
+
+    @Test
+    @DisplayName("Validar código: con el correcto no lo gasta ni cambia la contraseña")
+    void validarCodigoCorrecto() {
+        when(usuarioRepository.buscarPorCorreo(CORREO)).thenReturn(Optional.of(laura));
+        when(codigoPort.buscarActivo(7L, 5)).thenReturn(Optional.of(new CodigoActivo(3L, encoder.encode("123456"), 0)));
+
+        servicio.validarCodigo(CORREO, "123456");
+
+        verify(codigoPort, never()).marcarUsado(anyLong());
+        verify(codigoPort, never()).actualizarPassword(anyLong(), anyString());
+        verify(codigoPort, never()).sumarIntento(anyLong());
+    }
+
+    @Test
+    @DisplayName("Validar código: uno incorrecto cuenta como intento fallido")
+    void validarCodigoIncorrecto() {
+        when(usuarioRepository.buscarPorCorreo(CORREO)).thenReturn(Optional.of(laura));
+        when(codigoPort.buscarActivo(7L, 5)).thenReturn(Optional.of(new CodigoActivo(3L, encoder.encode("123456"), 2)));
+
+        assertThatThrownBy(() -> servicio.validarCodigo(CORREO, "000000"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Código incorrecto. Te quedan 2 intentos.");
+        verify(codigoPort).sumarIntento(3L);
+    }
 }

@@ -5,6 +5,9 @@ import co.edu.ucundinamarca.saesu.usuario.application.dto.request.ActualizarPerf
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.LoginRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.RegistroRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.AuthResponse;
+import co.edu.ucundinamarca.saesu.usuario.application.dto.response.RegistroResponse;
+import co.edu.ucundinamarca.saesu.usuario.application.dto.request.VerificarCorreoRequest;
+import co.edu.ucundinamarca.saesu.usuario.application.service.VerificarCorreoService;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.UsuarioResponse;
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
 import co.edu.ucundinamarca.saesu.usuario.ports.input.ActualizarPerfilUseCase;
@@ -37,6 +40,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final UsuarioRepositoryPort usuarioRepository;
     private final RecuperarPasswordService recuperarPasswordService;
+    private final VerificarCorreoService verificarCorreoService;
 
     public AuthController(RegistrarUsuarioUseCase registrarUsuarioUseCase,
                           LoginUseCase loginUseCase,
@@ -44,8 +48,10 @@ public class AuthController {
                           ActualizarPerfilUseCase actualizarPerfilUseCase,
                           JwtService jwtService,
                           UsuarioRepositoryPort usuarioRepository,
-                          RecuperarPasswordService recuperarPasswordService) {
+                          RecuperarPasswordService recuperarPasswordService,
+                          VerificarCorreoService verificarCorreoService) {
         this.recuperarPasswordService = recuperarPasswordService;
+        this.verificarCorreoService = verificarCorreoService;
         this.registrarUsuarioUseCase = registrarUsuarioUseCase;
         this.loginUseCase = loginUseCase;
         this.obtenerPerfilUseCase = obtenerPerfilUseCase;
@@ -56,11 +62,34 @@ public class AuthController {
 
     @Operation(
             summary = "Registrar estudiante",
-            description = "Crea un nuevo usuario con rol ESTUDIANTE. Devuelve el usuario creado y un JWT."
+            description = "Todavía NO crea la cuenta: guarda el registro como pendiente y envía un código de 6 dígitos al correo "
+                    + "institucional. La cuenta (rol ESTUDIANTE) se crea en POST /api/auth/verificar-correo."
     )
     @PostMapping("/registro")
-    public ResponseEntity<AuthResponse> registro(@Valid @RequestBody RegistroRequest request) {
+    public ResponseEntity<RegistroResponse> registro(@Valid @RequestBody RegistroRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(registrarUsuarioUseCase.registrar(request));
+    }
+
+    @Operation(
+            summary = "Verificar correo (doble verificación)",
+            description = "Valida el código de 6 dígitos enviado al registrarse (15 min, 5 intentos). Si es correcto crea la cuenta "
+                    + "y devuelve el usuario con su JWT, igual que el login."
+    )
+    @PostMapping("/verificar-correo")
+    public ResponseEntity<AuthResponse> verificarCorreo(@Valid @RequestBody VerificarCorreoRequest request) {
+        return ResponseEntity.ok(verificarCorreoService.verificar(request));
+    }
+
+    @Operation(
+            summary = "Reenviar código de verificación",
+            description = "Envía un código nuevo si hay un registro pendiente para ese correo (máximo uno por minuto). "
+                    + "Siempre responde lo mismo para no revelar qué correos están registrados."
+    )
+    @PostMapping("/reenviar-verificacion")
+    public ResponseEntity<java.util.Map<String, String>> reenviarVerificacion(@Valid @RequestBody RecuperarPasswordRequest request) {
+        verificarCorreoService.reenviar(request.correo());
+        return ResponseEntity.ok(java.util.Map.of("mensaje",
+                "Si tienes un registro pendiente, te enviamos un código nuevo."));
     }
 
     @Operation(
@@ -126,6 +155,17 @@ public class AuthController {
         recuperarPasswordService.solicitar(request.correo());
         return ResponseEntity.ok(java.util.Map.of("mensaje",
                 "Si el correo está registrado, te enviamos un código para restablecer tu contraseña."));
+    }
+
+    @Operation(
+            summary = "Recuperar contraseña: validar código",
+            description = "Comprueba el código de 6 dígitos sin gastarlo, para pasar al formulario de la contraseña nueva. "
+                    + "Un código incorrecto cuenta como intento (máximo 5)."
+    )
+    @PostMapping("/recuperar/validar")
+    public ResponseEntity<java.util.Map<String, String>> validarCodigoRecuperacion(@Valid @RequestBody VerificarCorreoRequest request) {
+        recuperarPasswordService.validarCodigo(request.correo(), request.codigo());
+        return ResponseEntity.ok(java.util.Map.of("mensaje", "Código correcto. Ya puedes crear tu nueva contraseña."));
     }
 
     @Operation(summary = "Restablecer contraseña con el código recibido")
