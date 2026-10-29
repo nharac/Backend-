@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: saesu-sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    depends_on:
+      - db
+    networks:
+      - saesu-network
+
+  db:
+    image: postgres:15
+    container_name: saesu-sonar-db
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    networks:
+      - saesu-network
+
+
+networks:
+  saesu-network:
+    external: true # esta red es creada por el contenedor de saesu, no es necesario crearla manualmente
