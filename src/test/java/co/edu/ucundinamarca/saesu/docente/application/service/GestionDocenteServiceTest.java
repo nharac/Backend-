@@ -2,7 +2,7 @@ package co.edu.ucundinamarca.saesu.docente.application.service;
 
 import co.edu.ucundinamarca.saesu.docente.ports.output.DocenteRepositoryPort;
 import co.edu.ucundinamarca.saesu.foro.domain.model.Respuesta;
-import co.edu.ucundinamarca.saesu.foro.ports.output.PublicacionRepositoryPort;
+import co.edu.ucundinamarca.saesu.foro.ports.output.PublicacionResumenPort;
 import co.edu.ucundinamarca.saesu.foro.ports.output.RespuestaRepositoryPort;
 import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService;
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
@@ -35,7 +35,7 @@ class GestionDocenteServiceTest {
     private static final String CORREO_DOCENTE = "profe@ucundinamarca.edu.co";
 
     @Mock private DocenteRepositoryPort docenteRepository;
-    @Mock private PublicacionRepositoryPort publicacionRepository;
+    @Mock private PublicacionResumenPort resumenPort;
     @Mock private RespuestaRepositoryPort respuestaRepository;
     @Mock private UsuarioRepositoryPort usuarioRepository;
     @Mock private PuntosService puntosService;

@@ -8,7 +8,11 @@ import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
@@ -29,6 +33,14 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
     @Override
     public Optional<Usuario> buscarPorId(Long id) {
         return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    public Map<Long, Usuario> buscarPorIds(Collection<Long> ids) {
+        if (ids.isEmpty()) return Map.of();
+        return repository.findAllById(ids).stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toMap(Usuario::getId, Function.identity()));
     }
 
     @Override

@@ -1,0 +1,8 @@
+$kind: http-request
+description: "Público. Crea la cuenta con el código de 6 dígitos que llegó al correo institucional (15 min, máximo 5 intentos). Devuelve usuario + token como el login."
+url: http://localhost:8080/api/auth/verificar-correo
+method: POST
+body:
+  type: json
+  content: "{\n  \"correo\": \"estudiante@ucundinamarca.edu.co\",\n  \"codigo\": \"123456\"\n}"
+order: 9000

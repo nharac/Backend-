@@ -5,12 +5,16 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Consultas de solo lectura que necesitan los logros, más el registro
  * de los logros desbloqueados (tabla usuario_logros, V11).
  * Se usa SQL directo porque cruza tablas de varios módulos (práctica, foro, gamificación).
+ *
+ * Todas las cifras salen en dos consultas (antes eran unas 15, una por condición),
+ * porque cada consulta es una ida y vuelta hasta Supabase.
  */
 @Repository
 public class LogrosJdbcRepository {
@@ -21,60 +25,69 @@ public class LogrosJdbcRepository {
         this.jdbc = jdbc;
     }
 
-    private long contar(String sql, Object... args) {
-        Long n = jdbc.queryForObject(sql, Long.class, args);
-        return n == null ? 0 : n;
+    /**
+     * Lo que se necesita para evaluar los logros.
+     * @param temas por tema: {preguntas activas del tema, de esas cuántas ha acertado alguna vez}
+     */
+    public record Estadisticas(long aciertos, long acertadasAlPrimerIntento, long racha,
+                               long publicaciones, long respuestasForo, long respuestasOficiales,
+                               long puntos, Map<String, long[]> temas) {
+
+        public long preguntasDelTema(String tema) {
+            long[] t = temas.get(tema);
+            return t == null ? 0 : t[0];
+        }
+
+        public long resueltasDelTema(String tema) {
+            long[] t = temas.get(tema);
+            return t == null ? 0 : t[1];
+        }
     }
 
-    public long contarAciertos(Long usuarioId) {
-        return contar("SELECT COUNT(*) FROM respuestas_estudiante WHERE usuario_id = ? AND es_correcta = TRUE", usuarioId);
+    public Estadisticas estadisticas(Long usuarioId) {
+        Map<String, long[]> temas = new HashMap<>();
+        jdbc.query("""
+                SELECT p.tema,
+                       COUNT(*) AS total,
+                       COUNT(*) FILTER (WHERE EXISTS (
+                           SELECT 1 FROM respuestas_estudiante r
+                           WHERE r.pregunta_id = p.id AND r.usuario_id = ? AND r.es_correcta = TRUE)) AS resueltas
+                FROM preguntas p
+                WHERE p.activa
+                GROUP BY p.tema
+                """, rs -> {
+            temas.put(rs.getString("tema"), new long[]{rs.getLong("total"), rs.getLong("resueltas")});
+        }, usuarioId);
+
+        return jdbc.queryForObject("""
+                SELECT
+                  (SELECT COUNT(*) FROM respuestas_estudiante WHERE usuario_id = ? AND es_correcta = TRUE) AS aciertos,
+                  (SELECT COUNT(*) FROM (
+                       SELECT DISTINCT ON (pregunta_id) es_correcta
+                       FROM respuestas_estudiante
+                       WHERE usuario_id = ?
+                       ORDER BY pregunta_id, fecha_intento, id
+                   ) primeros WHERE primeros.es_correcta = TRUE) AS primera,
+                  (SELECT COALESCE(racha_actual, 0) FROM usuarios WHERE id = ?) AS racha,
+                  (SELECT COUNT(*) FROM publicaciones WHERE usuario_id = ?) AS publicaciones,
+                  (SELECT COUNT(*) FROM respuestas WHERE usuario_id = ?) AS respuestas_foro,
+                  (SELECT COUNT(*) FROM respuestas WHERE usuario_id = ? AND es_oficial = TRUE) AS oficiales,
+                  (SELECT COALESCE(SUM(cantidad), 0) FROM puntos_historial WHERE usuario_id = ?) AS puntos
+                """, (rs, i) -> new Estadisticas(
+                        rs.getLong("aciertos"), rs.getLong("primera"), rs.getLong("racha"),
+                        rs.getLong("publicaciones"), rs.getLong("respuestas_foro"), rs.getLong("oficiales"),
+                        rs.getLong("puntos"), temas),
+                usuarioId, usuarioId, usuarioId, usuarioId, usuarioId, usuarioId, usuarioId);
     }
 
-    /** Preguntas cuyo PRIMER intento del usuario fue correcto. */
-    public long contarAcertadasAlPrimerIntento(Long usuarioId) {
-        return contar("""
-                SELECT COUNT(*) FROM (
-                    SELECT DISTINCT ON (pregunta_id) pregunta_id, es_correcta
-                    FROM respuestas_estudiante
-                    WHERE usuario_id = ?
-                    ORDER BY pregunta_id, fecha_intento, id
-                ) primeros
-                WHERE primeros.es_correcta = TRUE
-                """, usuarioId);
-    }
-
-    public long contarPreguntasDelTema(String tema) {
-        return contar("SELECT COUNT(*) FROM preguntas WHERE tema = ? AND activa", tema);
-    }
-
-    /** Preguntas distintas del tema que el usuario ha acertado al menos una vez. */
-    public long contarResueltasDelTema(Long usuarioId, String tema) {
-        return contar("""
-                SELECT COUNT(DISTINCT r.pregunta_id)
-                FROM respuestas_estudiante r
-                JOIN preguntas p ON p.id = r.pregunta_id
-                WHERE r.usuario_id = ? AND r.es_correcta = TRUE AND p.tema = ? AND p.activa
-                """, usuarioId, tema);
-    }
-
-    public long rachaActual(Long usuarioId) {
-        return contar("SELECT COALESCE(racha_actual, 0) FROM usuarios WHERE id = ?", usuarioId);
-    }
-
-    public long contarPublicaciones(Long usuarioId) {
-        return contar("SELECT COUNT(*) FROM publicaciones WHERE usuario_id = ?", usuarioId);
-    }
-
-    public long contarRespuestasForo(Long usuarioId) {
-        return contar("SELECT COUNT(*) FROM respuestas WHERE usuario_id = ?", usuarioId);
-    }
-
-    public long contarRespuestasOficiales(Long usuarioId) {
-        return contar("SELECT COUNT(*) FROM respuestas WHERE usuario_id = ? AND es_oficial = TRUE", usuarioId);
-    }
-
-    public long puntosTotales(Long usuarioId) {
-        return contar("SELECT COALESCE(SUM(cantidad), 0) FROM puntos_historial WHERE usuario_id = ?", usuarioId);
+    /** Racha y puntos totales para el perfil, en una sola consulta: {racha, puntos}. */
+    public long[] rachaYPuntos(Long usuarioId) {
+        List<long[]> r = jdbc.query("""
+                SELECT COALESCE(u.racha_actual, 0) AS racha,
+                       COALESCE((SELECT SUM(cantidad) FROM puntos_historial WHERE usuario_id = u.id), 0) AS puntos
+                FROM usuarios u WHERE u.id = ?
+                """, (rs, i) -> new long[]{rs.getLong("racha"), rs.getLong("puntos")}, usuarioId);
+        return r.isEmpty() ? new long[]{0, 0} : r.get(0);
     }
 
     /** Logros ya desbloqueados: código → fecha. */

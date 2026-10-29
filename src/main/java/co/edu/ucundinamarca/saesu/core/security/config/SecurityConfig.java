@@ -37,7 +37,8 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/registro", "/api/auth/login",
-                        "/api/auth/recuperar", "/api/auth/restablecer").permitAll()
+                        "/api/auth/recuperar", "/api/auth/recuperar/validar", "/api/auth/restablecer",
+                        "/api/auth/verificar-correo", "/api/auth/reenviar-verificacion").permitAll()
                 .requestMatchers(
                         "/swagger-ui/**",
                         "/swagger-ui.html",

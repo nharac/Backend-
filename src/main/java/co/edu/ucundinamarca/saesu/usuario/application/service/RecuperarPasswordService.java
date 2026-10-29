@@ -92,24 +92,24 @@ public class RecuperarPasswordService {
     }
 
     /** Paso 2. Lanza IllegalArgumentException (400) con un mensaje para el usuario si algo no cuadra. */
+    /**
+     * Paso 2: solo comprueba que el código sea correcto, sin gastarlo, para que el frontend
+     * muestre el formulario de la contraseña nueva únicamente con un código válido.
+     * Un código incorrecto cuenta como intento fallido.
+     */
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
+    public void validarCodigo(String correo, String codigo) {
+        comprobar(correo, codigo);
+    }
+
+    /** Paso 3: vuelve a comprobar el código (el servidor no confía en el paso 2) y cambia la contraseña. */
     @Transactional(noRollbackFor = IllegalArgumentException.class)
     public void restablecer(RestablecerPasswordRequest request) {
-        Usuario usuario = usuarioRepository.buscarPorCorreo(limpiar(request.correo()))
-                .orElseThrow(() -> new IllegalArgumentException(MENSAJE_CODIGO_INVALIDO));
-
-        CodigoActivo activo = codigoPort.buscarActivo(usuario.getId(), MAX_INTENTOS)
-                .orElseThrow(() -> new IllegalArgumentException(MENSAJE_CODIGO_INVALIDO));
-
-        if (!passwordEncoder.matches(request.codigo().trim(), activo.codigoHash())) {
-            codigoPort.sumarIntento(activo.id());
-            int restantes = MAX_INTENTOS - (activo.intentos() + 1);
-            throw new IllegalArgumentException(restantes <= 0
-                    ? "Demasiados intentos fallidos. Solicita un código nuevo."
-                    : "Código incorrecto. Te queda" + (restantes == 1 ? " 1 intento." : "n " + restantes + " intentos."));
-        }
+        Comprobado ok = comprobar(request.correo(), request.codigo());
+        Usuario usuario = ok.usuario();
 
         codigoPort.actualizarPassword(usuario.getId(), passwordEncoder.encode(request.passwordNueva()));
-        codigoPort.marcarUsado(activo.id());
+        codigoPort.marcarUsado(ok.codigo().id());
         codigoPort.invalidarActivos(usuario.getId());
 
         try {
@@ -117,6 +117,26 @@ public class RecuperarPasswordService {
         } catch (Exception e) {
             log.warn("No se pudo enviar el aviso de cambio de contraseña a {}", usuario.getCorreo());
         }
+    }
+
+    private record Comprobado(Usuario usuario, CodigoActivo codigo) {}
+
+    /** Lanza IllegalArgumentException (400) con un mensaje para el usuario si el código no sirve. */
+    private Comprobado comprobar(String correo, String codigo) {
+        Usuario usuario = usuarioRepository.buscarPorCorreo(limpiar(correo))
+                .orElseThrow(() -> new IllegalArgumentException(MENSAJE_CODIGO_INVALIDO));
+
+        CodigoActivo activo = codigoPort.buscarActivo(usuario.getId(), MAX_INTENTOS)
+                .orElseThrow(() -> new IllegalArgumentException(MENSAJE_CODIGO_INVALIDO));
+
+        if (!passwordEncoder.matches(codigo == null ? "" : codigo.trim(), activo.codigoHash())) {
+            codigoPort.sumarIntento(activo.id());
+            int restantes = MAX_INTENTOS - (activo.intentos() + 1);
+            throw new IllegalArgumentException(restantes <= 0
+                    ? "Demasiados intentos fallidos. Solicita un código nuevo."
+                    : "Código incorrecto. Te queda" + (restantes == 1 ? " 1 intento." : "n " + restantes + " intentos."));
+        }
+        return new Comprobado(usuario, activo);
     }
 
     /** Código de 6 dígitos (con ceros a la izquierda) generado con SecureRandom. */

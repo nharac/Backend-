@@ -1,6 +1,6 @@
 $kind: http-request
 name: http://localhost:8080/api/auth/registro
-description: ""
+description: "Todavía no crea la cuenta: guarda el registro pendiente y envía un código de 6 dígitos al correo institucional (201, sin token). La cuenta se crea con Verificar correo."
 url: http://localhost:8080/api/auth/registro
 method: POST
 body:

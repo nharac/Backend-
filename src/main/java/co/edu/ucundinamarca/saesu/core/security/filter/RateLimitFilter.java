@@ -43,7 +43,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     /** Rutas públicas con el límite estricto (fuerza bruta de contraseñas y de códigos de recuperación). */
     private static final java.util.Set<String> RUTAS_AUTH = java.util.Set.of(
-            "/api/auth/login", "/api/auth/registro", "/api/auth/recuperar", "/api/auth/restablecer");
+            "/api/auth/login", "/api/auth/registro", "/api/auth/recuperar", "/api/auth/recuperar/validar", "/api/auth/restablecer",
+            "/api/auth/verificar-correo", "/api/auth/reenviar-verificacion");
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
