@@ -24,14 +24,19 @@ import java.util.stream.Collectors;
 /**
  * Estadísticas del grupo, progreso por estudiante y exportación a CSV (módulo docente).
  *
- * Un estudiante queda "en riesgo" si:
- *  - nunca ha practicado o lleva más de {@value #DIAS_SIN_PRACTICAR} días sin practicar, o
- *  - tiene al menos {@value #MIN_INTENTOS} intentos y menos del {@value #PORCENTAJE_MINIMO} % de aciertos.
+ * Estado de cada estudiante:
+ *  - "nuevo": se registró hace menos de {@value #DIAS_COMO_NUEVO} días y todavía no ha practicado ni hecho
+ *    quices. No se marca en riesgo: tiene ese tiempo para empezar.
+ *  - "en-riesgo": pasado ese tiempo, si nunca ha tenido actividad (práctica o quiz), si lleva más de
+ *    {@value #DIAS_SIN_PRACTICAR} días sin actividad, o si tiene al menos {@value #MIN_INTENTOS}
+ *    intentos y menos del {@value #PORCENTAJE_MINIMO} % de aciertos.
+ *  - "al-dia": en cualquier otro caso.
  */
 @Service
 public class EstadisticasDocenteService {
 
     static final int DIAS_SIN_PRACTICAR = 7;
+    static final int DIAS_COMO_NUEVO = 7;
     static final int MIN_INTENTOS = 5;
     static final double PORCENTAJE_MINIMO = 50.0;
 
@@ -109,7 +114,16 @@ public class EstadisticasDocenteService {
                 p.oficiales(),
                 port.ultimosIntentos(usuarioId, 10),
                 port.preguntasConMasFallos(usuarioId, 5),
-                port.actividad(14, usuarioId));
+                port.actividad(14, usuarioId),
+                port.ultimosQuices(usuarioId, 10).stream().map(EstadisticasDocenteService::quiz).toList());
+    }
+
+    private static EstudianteDetalleResponse.QuizRealizado quiz(EstadisticasDocentePort.QuizEstudiante q) {
+        long segundos = q.iniciadoEn() == null || q.finalizadoEn() == null ? 0
+                : Math.max(0, Duration.between(q.iniciadoEn(), q.finalizadoEn()).toSeconds());
+        int pct = q.total() == 0 ? 0 : (int) Math.round(100.0 * q.correctas() / q.total());
+        return new EstudianteDetalleResponse.QuizRealizado(q.id(), q.tema(), q.correctas(), q.total(), pct,
+                segundos, q.fueraDeTiempo(), q.finalizadoEn());
     }
 
     EstudianteResumenResponse construirResumen(FilaEstudiante f, List<FilaTemaEstudiante> temas,
@@ -124,22 +138,42 @@ public class EstadisticasDocenteService {
         }
 
         double pct = porcentaje(f.correctas(), f.intentos());
-        List<String> motivos = motivosRiesgo(f.ultimaActividad(), f.intentos(), pct);
+        LocalDateTime ultimaActividad = masReciente(f.ultimaActividad(), f.ultimoQuiz());
+        // El tiempo de gracia es para empezar: en cuanto practica o hace un quiz se evalúa como los demás
+        Integer diasDeGracia = ultimaActividad == null ? diasDeGracia(f.fechaRegistro()) : null;
+        List<String> motivos = diasDeGracia != null ? List.of() : motivosRiesgo(ultimaActividad, f.intentos(), pct);
+        String estado = diasDeGracia != null ? "nuevo" : motivos.isEmpty() ? "al-dia" : "en-riesgo";
 
         return new EstudianteResumenResponse(
                 f.id(), f.nombre(), f.correo(), f.fotoPerfilUrl(), f.puntos(), f.racha(),
-                f.intentos(), f.correctas(), pct, f.ultimaActividad(),
-                !motivos.isEmpty(), motivos, porTema);
+                f.intentos(), f.correctas(), pct, ultimaActividad,
+                !motivos.isEmpty(), motivos, porTema,
+                estado, diasDeGracia, f.quices(),
+                f.promedioQuiz() == null ? null : Math.round(f.promedioQuiz() * 10) / 10.0);
+    }
+
+    /** Días que le quedan como "nuevo" (mínimo 1), o null si ya pasó ese tiempo. */
+    Integer diasDeGracia(LocalDateTime fechaRegistro) {
+        if (fechaRegistro == null) return null;
+        long horas = Duration.between(fechaRegistro, LocalDateTime.now(clock)).toHours();
+        long restantes = DIAS_COMO_NUEVO * 24L - horas;
+        return restantes > 0 ? (int) Math.max(1, (restantes + 23) / 24) : null;
+    }
+
+    private static LocalDateTime masReciente(LocalDateTime a, LocalDateTime b) {
+        if (a == null) return b;
+        if (b == null) return a;
+        return a.isAfter(b) ? a : b;
     }
 
     List<String> motivosRiesgo(LocalDateTime ultimaActividad, long intentos, double porcentaje) {
         List<String> motivos = new ArrayList<>();
         if (ultimaActividad == null) {
-            motivos.add("Aún no ha practicado");
+            motivos.add("No ha practicado ni hecho quices");
         } else {
             long dias = Duration.between(ultimaActividad, LocalDateTime.now(clock)).toDays();
             if (dias > DIAS_SIN_PRACTICAR) {
-                motivos.add("Sin practicar hace " + dias + " días");
+                motivos.add("Sin actividad hace " + dias + " días");
             }
         }
         if (intentos >= MIN_INTENTOS && porcentaje < PORCENTAJE_MINIMO) {
@@ -174,7 +208,7 @@ public class EstadisticasDocenteService {
                 celdas.add(t.intentos() == 0 ? "" : formatoNumero(t.porcentaje()));
             }
             celdas.add(e.ultimaActividad() == null ? "Nunca" : e.ultimaActividad().format(FORMATO_FECHA));
-            celdas.add(e.enRiesgo() ? "En riesgo" : "Al día");
+            celdas.add(switch (e.estado()) { case "nuevo" -> "Nuevo"; case "en-riesgo" -> "En riesgo"; default -> "Al día"; });
             celdas.add(String.join(", ", e.motivosRiesgo()));
             sb.append(celdas.stream().map(EstadisticasDocenteService::celdaCsv).collect(Collectors.joining(";")))
               .append("\r\n");

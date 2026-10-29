@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.usuario.application.service;
 
+import co.edu.ucundinamarca.saesu.core.logging.RequestLoggingFilter;
 import co.edu.ucundinamarca.saesu.core.notificacion.EmailService;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.RestablecerPasswordRequest;
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
@@ -87,7 +88,7 @@ public class RecuperarPasswordService {
         try {
             emailService.enviarCodigoRecuperacion(usuario.get().getCorreo(), usuario.get().getNombre(), codigo, MINUTOS_VIGENCIA);
         } catch (Exception e) {
-            log.error("No se pudo enviar el código de recuperación a {}", usuario.get().getCorreo(), e);
+            log.error("No se pudo enviar el código de recuperación a {}", RequestLoggingFilter.enmascarar(usuario.get().getCorreo()), e);
         }
     }
 
@@ -115,7 +116,7 @@ public class RecuperarPasswordService {
         try {
             emailService.enviarAvisoCambioPassword(usuario.getCorreo(), usuario.getNombre());
         } catch (Exception e) {
-            log.warn("No se pudo enviar el aviso de cambio de contraseña a {}", usuario.getCorreo());
+            log.warn("No se pudo enviar el aviso de cambio de contraseña a {}", RequestLoggingFilter.enmascarar(usuario.getCorreo()));
         }
     }
 

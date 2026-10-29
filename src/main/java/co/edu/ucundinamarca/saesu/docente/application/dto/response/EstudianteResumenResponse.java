@@ -20,7 +20,14 @@ public record EstudianteResumenResponse(
         LocalDateTime ultimaActividad,
         boolean enRiesgo,
         List<String> motivosRiesgo,
-        List<TemaProgreso> porTema
+        List<TemaProgreso> porTema,
+        /** "nuevo" (recién registrado, aún en su tiempo de gracia), "al-dia" o "en-riesgo". */
+        String estado,
+        /** Si es nuevo: días que le quedan antes de que su inactividad cuente como riesgo. */
+        Integer diasDeGracia,
+        long quices,
+        /** Promedio de sus quices (0-100); null si no ha hecho ninguno. */
+        Double promedioQuiz
 ) {
 
     /** Progreso del estudiante en un tema. */

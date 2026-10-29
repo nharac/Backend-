@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.usuario.application.service;
 
+import co.edu.ucundinamarca.saesu.core.logging.RequestLoggingFilter;
 import co.edu.ucundinamarca.saesu.core.notificacion.EmailService;
 import co.edu.ucundinamarca.saesu.core.security.service.JwtService;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.RegistroRequest;
@@ -124,7 +125,7 @@ public class VerificarCorreoService {
         try {
             emailService.enviarCorreoBienvenida(guardado.getCorreo(), guardado.getNombre());
         } catch (Exception e) {
-            log.warn("No se pudo enviar el correo de bienvenida a {}", guardado.getCorreo());
+            log.warn("No se pudo enviar el correo de bienvenida a {}", RequestLoggingFilter.enmascarar(guardado.getCorreo()));
         }
 
         return new AuthResponse(
@@ -138,7 +139,7 @@ public class VerificarCorreoService {
         try {
             emailService.enviarCodigoVerificacion(correo, nombre, codigo, MINUTOS_VIGENCIA);
         } catch (Exception e) {
-            log.error("No se pudo enviar el código de verificación a {}", correo, e);
+            log.error("No se pudo enviar el código de verificación a {}", RequestLoggingFilter.enmascarar(correo), e);
         }
     }
 

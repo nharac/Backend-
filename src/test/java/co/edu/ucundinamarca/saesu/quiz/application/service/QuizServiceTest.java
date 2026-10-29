@@ -217,4 +217,20 @@ class QuizServiceTest {
             assertThat(i.duracionSegundos()).isEqualTo(400);
         });
     }
+
+    @Test
+    @DisplayName("El docente ve la revisión del quiz de un estudiante, pero solo si es de ese estudiante")
+    void revisionParaDocente() {
+        IntentoQuiz entregado = new IntentoQuiz(7L, 1L, "limites", 1, AHORA.minusSeconds(60), AHORA.plusSeconds(30),
+                AHORA, 1, false);
+        when(port.buscarIntento(7L)).thenReturn(Optional.of(entregado));
+        when(port.preguntasDelIntento(7L)).thenReturn(List.of(pregunta(1, "A")));
+        when(port.eleccionesDe(7L)).thenReturn(List.of(new Eleccion(1L, "A", true)));
+
+        QuizResultadoResponse r = service.resultadoDeEstudiante(1L, 7L);
+
+        assertThat(r.correctas()).isEqualTo(1);
+        assertThat(r.detalle()).singleElement().satisfies(d -> assertThat(d.letraElegida()).isEqualTo("A"));
+        assertThatThrownBy(() -> service.resultadoDeEstudiante(2L, 7L)).isInstanceOf(QuizNoEncontradoException.class);
+    }
 }

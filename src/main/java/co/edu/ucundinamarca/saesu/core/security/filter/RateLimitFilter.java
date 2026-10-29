@@ -9,6 +9,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -26,6 +28,8 @@ import java.time.Duration;
  */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);
 
     private static final int LIMITE_AUTH = 10;
     private static final int LIMITE_API = 120;
@@ -64,6 +68,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (balde.tryConsume(1)) {
             filterChain.doFilter(request, response);
         } else {
+            log.warn("Límite de peticiones superado: {} {} desde {}", request.getMethod(), uri, ipCliente(request));
             response.setStatus(429); // Too Many Requests
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(

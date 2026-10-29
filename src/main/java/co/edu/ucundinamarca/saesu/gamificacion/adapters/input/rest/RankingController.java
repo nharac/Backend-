@@ -2,9 +2,7 @@ package co.edu.ucundinamarca.saesu.gamificacion.adapters.input.rest;
 
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.MiPosicionResponse;
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.RankingResponse;
-import co.edu.ucundinamarca.saesu.gamificacion.application.service.RankingService;
-import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.entity.UsuarioEntity;
-import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.repository.UsuarioJpaRepository;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.input.RankingUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,17 +11,16 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/** Adaptador de entrada: solo traduce HTTP al puerto RankingUseCase (no conoce JPA ni SQL). */
 @RestController
 @RequestMapping("/api/ranking")
 @Tag(name = "Gamificación", description = "Ranking de estudiantes")
 public class RankingController {
 
-    private final RankingService rankingService;
-    private final UsuarioJpaRepository usuarioRepository;
+    private final RankingUseCase ranking;
 
-    public RankingController(RankingService rankingService, UsuarioJpaRepository usuarioRepository) {
-        this.rankingService = rankingService;
-        this.usuarioRepository = usuarioRepository;
+    public RankingController(RankingUseCase ranking) {
+        this.ranking = ranking;
     }
 
     @Operation(summary = "Top 10 del ranking",
@@ -32,7 +29,7 @@ public class RankingController {
     public List<RankingResponse> obtenerRanking(
             @Parameter(description = "total (por defecto), semana o mes")
             @RequestParam(required = false) String periodo) {
-        return rankingService.top(RankingService.Periodo.de(periodo));
+        return ranking.top(periodo);
     }
 
     @Operation(summary = "Mi posición en el ranking",
@@ -42,8 +39,6 @@ public class RankingController {
             Authentication authentication,
             @Parameter(description = "total (por defecto), semana o mes")
             @RequestParam(required = false) String periodo) {
-        UsuarioEntity usuario = usuarioRepository.findByCorreo(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-        return rankingService.miPosicion(usuario.getId(), RankingService.Periodo.de(periodo));
+        return ranking.miPosicion(authentication.getName(), periodo);
     }
 }

@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc;
 
+import co.edu.ucundinamarca.saesu.gamificacion.ports.output.LogrosPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -17,7 +18,7 @@ import java.util.Map;
  * porque cada consulta es una ida y vuelta hasta Supabase.
  */
 @Repository
-public class LogrosJdbcRepository {
+public class LogrosJdbcRepository implements LogrosPort {
 
     private final JdbcTemplate jdbc;
 
@@ -25,25 +26,7 @@ public class LogrosJdbcRepository {
         this.jdbc = jdbc;
     }
 
-    /**
-     * Lo que se necesita para evaluar los logros.
-     * @param temas por tema: {preguntas activas del tema, de esas cuántas ha acertado alguna vez}
-     */
-    public record Estadisticas(long aciertos, long acertadasAlPrimerIntento, long racha,
-                               long publicaciones, long respuestasForo, long respuestasOficiales,
-                               long puntos, Map<String, long[]> temas) {
-
-        public long preguntasDelTema(String tema) {
-            long[] t = temas.get(tema);
-            return t == null ? 0 : t[0];
-        }
-
-        public long resueltasDelTema(String tema) {
-            long[] t = temas.get(tema);
-            return t == null ? 0 : t[1];
-        }
-    }
-
+    @Override
     public Estadisticas estadisticas(Long usuarioId) {
         Map<String, long[]> temas = new HashMap<>();
         jdbc.query("""
@@ -81,6 +64,7 @@ public class LogrosJdbcRepository {
     }
 
     /** Racha y puntos totales para el perfil, en una sola consulta: {racha, puntos}. */
+    @Override
     public long[] rachaYPuntos(Long usuarioId) {
         List<long[]> r = jdbc.query("""
                 SELECT COALESCE(u.racha_actual, 0) AS racha,
@@ -91,6 +75,7 @@ public class LogrosJdbcRepository {
     }
 
     /** Logros ya desbloqueados: código → fecha. */
+    @Override
     public Map<String, OffsetDateTime> obtenidos(Long usuarioId) {
         Map<String, OffsetDateTime> mapa = new HashMap<>();
         jdbc.query("SELECT codigo, fecha_obtenido FROM usuario_logros WHERE usuario_id = ?",
@@ -100,6 +85,7 @@ public class LogrosJdbcRepository {
     }
 
     /** Registra el logro; si ya existía no hace nada (UNIQUE usuario_id + codigo). */
+    @Override
     public boolean guardar(Long usuarioId, String codigo) {
         return jdbc.update("""
                 INSERT INTO usuario_logros (usuario_id, codigo) VALUES (?, ?)

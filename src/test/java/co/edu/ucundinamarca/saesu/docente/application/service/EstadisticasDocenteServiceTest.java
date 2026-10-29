@@ -44,7 +44,56 @@ class EstadisticasDocenteServiceTest {
     }
 
     private static FilaEstudiante fila(Long id, String nombre, long intentos, long correctas, LocalDateTime ultima) {
-        return new FilaEstudiante(id, nombre, id + "@u.edu.co", null, 100, 2, intentos, correctas, ultima, AHORA.minusMonths(1));
+        return new FilaEstudiante(id, nombre, id + "@u.edu.co", null, 100, 2, intentos, correctas, ultima, AHORA.minusMonths(1),
+                0, null, null);
+    }
+
+    private static FilaEstudiante registrado(LocalDateTime registro, long intentos, LocalDateTime ultima, LocalDateTime ultimoQuiz) {
+        return new FilaEstudiante(9L, "Nuevo", "n@u.edu.co", null, 0, 0, intentos, 0, ultima, registro,
+                ultimoQuiz == null ? 0 : 1, ultimoQuiz == null ? null : 70.0, ultimoQuiz);
+    }
+
+    @Test
+    @DisplayName("Recién registrado y sin actividad: 'nuevo' (no en riesgo) con los días que le quedan")
+    void nuevoSinActividad() {
+        EstudianteResumenResponse e = servicio.construirResumen(registrado(AHORA.minusDays(2), 0, null, null), List.of(), Map.of());
+
+        assertThat(e.estado()).isEqualTo("nuevo");
+        assertThat(e.enRiesgo()).isFalse();
+        assertThat(e.motivosRiesgo()).isEmpty();
+        assertThat(e.diasDeGracia()).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("Pasados 7 días sin practicar ni hacer quices: en riesgo")
+    void nuevoQueNoEmpezo() {
+        EstudianteResumenResponse e = servicio.construirResumen(registrado(AHORA.minusDays(8), 0, null, null), List.of(), Map.of());
+
+        assertThat(e.estado()).isEqualTo("en-riesgo");
+        assertThat(e.diasDeGracia()).isNull();
+        assertThat(e.motivosRiesgo()).containsExactly("No ha practicado ni hecho quices");
+    }
+
+    @Test
+    @DisplayName("Un nuevo que ya empezó se evalúa como los demás (aquí, al día)")
+    void nuevoQueYaEmpezo() {
+        EstudianteResumenResponse e = servicio.construirResumen(
+                registrado(AHORA.minusDays(2), 0, null, AHORA.minusHours(5)), List.of(), Map.of());
+
+        assertThat(e.estado()).isEqualTo("al-dia");
+        assertThat(e.diasDeGracia()).isNull();
+    }
+
+    @Test
+    @DisplayName("Un quiz reciente cuenta como actividad aunque no haya practicado")
+    void quizCuentaComoActividad() {
+        EstudianteResumenResponse e = servicio.construirResumen(
+                registrado(AHORA.minusDays(30), 0, AHORA.minusDays(20), AHORA.minusDays(1)), List.of(), Map.of());
+
+        assertThat(e.estado()).isEqualTo("al-dia");
+        assertThat(e.ultimaActividad()).isEqualTo(AHORA.minusDays(1));
+        assertThat(e.quices()).isEqualTo(1);
+        assertThat(e.promedioQuiz()).isEqualTo(70.0);
     }
 
     @Test
@@ -56,14 +105,14 @@ class EstadisticasDocenteServiceTest {
     @Test
     @DisplayName("En riesgo si nunca ha practicado")
     void nuncaPractico() {
-        assertThat(servicio.motivosRiesgo(null, 0, 0.0)).containsExactly("Aún no ha practicado");
+        assertThat(servicio.motivosRiesgo(null, 0, 0.0)).containsExactly("No ha practicado ni hecho quices");
     }
 
     @Test
     @DisplayName("En riesgo si lleva más de 7 días sin practicar (7 justos todavía no)")
     void sinPracticar() {
         assertThat(servicio.motivosRiesgo(AHORA.minusDays(7), 10, 90.0)).isEmpty();
-        assertThat(servicio.motivosRiesgo(AHORA.minusDays(10), 10, 90.0)).containsExactly("Sin practicar hace 10 días");
+        assertThat(servicio.motivosRiesgo(AHORA.minusDays(10), 10, 90.0)).containsExactly("Sin actividad hace 10 días");
     }
 
     @Test
@@ -78,7 +127,7 @@ class EstadisticasDocenteServiceTest {
     @DisplayName("Puede tener los dos motivos a la vez")
     void dosMotivos() {
         assertThat(servicio.motivosRiesgo(AHORA.minusDays(12), 8, 25.0))
-                .containsExactly("Sin practicar hace 12 días", "Aciertos bajos (25 %)");
+                .containsExactly("Sin actividad hace 12 días", "Aciertos bajos (25 %)");
     }
 
     @Test

@@ -2,7 +2,10 @@ package co.edu.ucundinamarca.saesu.gamificacion.application.service;
 
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.MiPosicionResponse;
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.RankingResponse;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.input.RankingUseCase;
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.RankingPort;
+import co.edu.ucundinamarca.saesu.usuario.domain.exception.UsuarioNoEncontradoException;
+import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +24,7 @@ import java.util.Locale;
  * servidor, el inicio se convierte a la zona del servidor antes de consultar.
  */
 @Service
-public class RankingService {
+public class RankingService implements RankingUseCase {
 
     public static final int TAMANO_TOP = 10;
     private static final int MOVIMIENTOS = 6;
@@ -43,17 +46,36 @@ public class RankingService {
     }
 
     private final RankingPort port;
+    private final UsuarioRepositoryPort usuarios;
     private final Clock clock;
 
     @Autowired
-    public RankingService(RankingPort port) {
-        this(port, Clock.systemDefaultZone());
+    public RankingService(RankingPort port, UsuarioRepositoryPort usuarios) {
+        this(port, usuarios, Clock.systemDefaultZone());
     }
 
     /** Constructor para pruebas (reloj fijo). */
     RankingService(RankingPort port, Clock clock) {
+        this(port, null, clock);
+    }
+
+    RankingService(RankingPort port, UsuarioRepositoryPort usuarios, Clock clock) {
         this.port = port;
+        this.usuarios = usuarios;
         this.clock = clock;
+    }
+
+    @Override
+    public List<RankingResponse> top(String periodo) {
+        return top(Periodo.de(periodo));
+    }
+
+    @Override
+    public MiPosicionResponse miPosicion(String correo, String periodo) {
+        Long usuarioId = usuarios.buscarPorCorreo(correo)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"))
+                .getId();
+        return miPosicion(usuarioId, Periodo.de(periodo));
     }
 
     public List<RankingResponse> top(Periodo periodo) {

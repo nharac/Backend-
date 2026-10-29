@@ -1,7 +1,10 @@
 package co.edu.ucundinamarca.saesu.core.notificacion;
 
+import co.edu.ucundinamarca.saesu.core.logging.RequestLoggingFilter;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -20,6 +23,8 @@ import java.nio.charset.StandardCharsets;
  */
 @Service
 public class EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private final JavaMailSender mailSender;
     private final String remitente;
@@ -140,8 +145,11 @@ public class EmailService {
             helper.setSubject(asunto);
             helper.setText(texto, plantilla(icono, etiqueta, cuerpoHtml));
             mailSender.send(mensaje);
+            // Nunca se registra el asunto: los de verificación y recuperación llevan el código
+            log.info("Correo \"{}\" enviado a {}", etiqueta, RequestLoggingFilter.enmascarar(para));
         } catch (Exception e) {
-            throw new IllegalStateException("No se pudo enviar el correo a " + para, e);
+            log.error("No se pudo enviar el correo \"{}\" a {}: {}", etiqueta, RequestLoggingFilter.enmascarar(para), e.getMessage());
+            throw new IllegalStateException("No se pudo enviar el correo", e);
         }
     }
 

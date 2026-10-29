@@ -38,8 +38,16 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
                    COUNT(r.id) AS intentos,
                    COUNT(r.id) FILTER (WHERE r.es_correcta) AS correctas,
                    MAX(r.fecha_intento) AS ultima,
-                   u.fecha_registro
+                   u.fecha_registro,
+                   q.quices, q.promedio_quiz, q.ultimo_quiz
             FROM usuarios u
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) AS quices,
+                       AVG(100.0 * qi.correctas / qi.cantidad) AS promedio_quiz,
+                       MAX(qi.finalizado_en) AS ultimo_quiz
+                FROM quiz_intentos qi
+                WHERE qi.usuario_id = u.id AND qi.finalizado_en IS NOT NULL
+            ) q ON TRUE
             LEFT JOIN respuestas_estudiante r ON r.usuario_id = u.id
             WHERE %s
             """.formatted(HOY, ES_ESTUDIANTE);
@@ -65,16 +73,19 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
             rs.getLong("intentos"),
             rs.getLong("correctas"),
             fecha(rs, "ultima"),
-            fecha(rs, "fecha_registro"));
+            fecha(rs, "fecha_registro"),
+            rs.getLong("quices"),
+            (Double) (rs.getObject("promedio_quiz") == null ? null : rs.getDouble("promedio_quiz")),
+            fecha(rs, "ultimo_quiz"));
 
     @Override
     public List<FilaEstudiante> listarEstudiantes() {
-        return jdbc.query(SELECT_ESTUDIANTE + " GROUP BY u.id ORDER BY LOWER(u.nombre)", FILA_ESTUDIANTE);
+        return jdbc.query(SELECT_ESTUDIANTE + " GROUP BY u.id, q.quices, q.promedio_quiz, q.ultimo_quiz ORDER BY LOWER(u.nombre)", FILA_ESTUDIANTE);
     }
 
     @Override
     public Optional<FilaEstudiante> buscarEstudiante(Long usuarioId) {
-        return jdbc.query(SELECT_ESTUDIANTE + " AND u.id = ? GROUP BY u.id", FILA_ESTUDIANTE, usuarioId)
+        return jdbc.query(SELECT_ESTUDIANTE + " AND u.id = ? GROUP BY u.id, q.quices, q.promedio_quiz, q.ultimo_quiz", FILA_ESTUDIANTE, usuarioId)
                 .stream().findFirst();
     }
 
@@ -241,5 +252,18 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
     /** Porcentaje con un decimal (0 si no hay base). */
     static double porcentaje(long parte, long total) {
         return total == 0 ? 0.0 : Math.round(parte * 1000.0 / total) / 10.0;
+    }
+
+    @Override
+    public List<QuizEstudiante> ultimosQuices(Long usuarioId, int limite) {
+        return jdbc.query("""
+                SELECT id, tema, COALESCE(correctas, 0) AS correctas, cantidad, iniciado_en, finalizado_en, fuera_de_tiempo
+                FROM quiz_intentos
+                WHERE usuario_id = ? AND finalizado_en IS NOT NULL
+                ORDER BY finalizado_en DESC
+                LIMIT ?
+                """, (rs, i) -> new QuizEstudiante(rs.getLong("id"), rs.getString("tema"), rs.getInt("correctas"),
+                        rs.getInt("cantidad"), fecha(rs, "iniciado_en"), fecha(rs, "finalizado_en"),
+                        rs.getBoolean("fuera_de_tiempo")), usuarioId, limite);
     }
 }

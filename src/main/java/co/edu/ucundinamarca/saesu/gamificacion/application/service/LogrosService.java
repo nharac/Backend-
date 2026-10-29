@@ -1,9 +1,12 @@
 package co.edu.ucundinamarca.saesu.gamificacion.application.service;
 
-import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc.LogrosJdbcRepository;
-import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc.LogrosJdbcRepository.Estadisticas;
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.LogroResponse;
 import co.edu.ucundinamarca.saesu.gamificacion.domain.model.Logro;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.input.LogrosUseCase;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.output.LogrosPort;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.output.LogrosPort.Estadisticas;
+import co.edu.ucundinamarca.saesu.usuario.domain.exception.UsuarioNoEncontradoException;
+import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,16 +22,27 @@ import java.util.Map;
  * así que basta con evaluar al consultar los logros o después de responder en práctica.
  */
 @Service
-public class LogrosService {
+public class LogrosService implements LogrosUseCase {
 
     private static final int ACERTADAS_A_LA_PRIMERA = 10;
     private static final int RESPUESTAS_COLABORADOR = 10;
     private static final int PUNTOS_CONSTANTE = 500;
 
-    private final LogrosJdbcRepository repositorio;
+    private final LogrosPort repositorio;
+    private final UsuarioRepositoryPort usuarios;
 
-    public LogrosService(LogrosJdbcRepository repositorio) {
+    public LogrosService(LogrosPort repositorio, UsuarioRepositoryPort usuarios) {
         this.repositorio = repositorio;
+        this.usuarios = usuarios;
+    }
+
+    @Override
+    @Transactional
+    public List<LogroResponse> listar(String correo) {
+        Long usuarioId = usuarios.buscarPorCorreo(correo)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"))
+                .getId();
+        return listar(usuarioId);
     }
 
     /**

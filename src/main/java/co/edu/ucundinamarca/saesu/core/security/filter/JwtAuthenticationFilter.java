@@ -1,10 +1,12 @@
 package co.edu.ucundinamarca.saesu.core.security.filter;
 
+import co.edu.ucundinamarca.saesu.core.logging.RequestLoggingFilter;
 import co.edu.ucundinamarca.saesu.core.security.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -47,6 +49,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(auth);
+            // Las líneas de log de esta petición salen con el usuario (correo enmascarado)
+            MDC.put(RequestLoggingFilter.MDC_USUARIO, RequestLoggingFilter.enmascarar(correo));
         }
 
         chain.doFilter(request, response);

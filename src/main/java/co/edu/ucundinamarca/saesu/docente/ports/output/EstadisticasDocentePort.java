@@ -28,8 +28,15 @@ public interface EstadisticasDocentePort {
             long intentos,
             long correctas,
             LocalDateTime ultimaActividad,
-            LocalDateTime fechaRegistro
+            LocalDateTime fechaRegistro,
+            long quices,
+            Double promedioQuiz,
+            LocalDateTime ultimoQuiz
     ) {}
+
+    /** Un quiz entregado por el estudiante (para que el docente vea sus resultados). */
+    record QuizEstudiante(Long id, String tema, int correctas, int total, LocalDateTime iniciadoEn,
+                          LocalDateTime finalizadoEn, boolean fueraDeTiempo) {}
 
     /** Intentos de un estudiante en un tema. */
     record FilaTemaEstudiante(Long usuarioId, String tema, long intentos, long correctas, long resueltas) {}
@@ -64,4 +71,7 @@ public interface EstadisticasDocentePort {
     List<PreguntaConFallos> preguntasConMasFallos(Long usuarioId, int limite);
 
     ParticipacionEstudiante participacion(Long usuarioId);
+
+    /** Últimos quices entregados por el estudiante, del más reciente al más antiguo. */
+    List<QuizEstudiante> ultimosQuices(Long usuarioId, int limite);
 }

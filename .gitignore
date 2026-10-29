@@ -24,4 +24,7 @@
 Thumbs.db
 
 # ===== Logs =====
-*.log
+*.log/logs/
+
+# Parches temporales
+*.patch

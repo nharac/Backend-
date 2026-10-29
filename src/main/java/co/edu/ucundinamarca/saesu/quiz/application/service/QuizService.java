@@ -14,6 +14,8 @@ import co.edu.ucundinamarca.saesu.quiz.ports.output.QuizRepositoryPort;
 import co.edu.ucundinamarca.saesu.quiz.ports.output.QuizRepositoryPort.Eleccion;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.UsuarioNoEncontradoException;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +41,8 @@ import java.util.Set;
  */
 @Service
 public class QuizService implements QuizUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(QuizService.class);
 
     static final int SEGUNDOS_POR_PREGUNTA = 90;
     static final Duration GRACIA = Duration.ofSeconds(10);
@@ -83,6 +87,7 @@ public class QuizService implements QuizUseCase {
             lista.add(new QuizIniciadoResponse.Pregunta(i + 1, p.id(), p.tema(), p.dificultad(), p.enunciado(),
                     opcionesSinRespuesta(p)));
         }
+        log.info("Quiz {} iniciado: tema {}, {} preguntas", id, tema == null ? "mezclado" : tema, lista.size());
         return new QuizIniciadoResponse(id, tema, lista.size(), segundos, limite, lista);
     }
 
@@ -121,13 +126,27 @@ public class QuizService implements QuizUseCase {
         }
 
         int porcentaje = porcentaje(correctas, preguntas.size());
+        log.info("Quiz {} entregado: {}/{} correctas ({}%){}", intentoId, correctas, preguntas.size(), porcentaje,
+                tarde ? " fuera de tiempo" : "");
         boolean mejorMarca = antes.intentos() > 0 && porcentaje > antes.mejorPorcentaje();
         return resultado(intento, preguntas, elecciones, correctas, ahora, tarde, mejorMarca);
     }
 
     @Override
     public QuizResultadoResponse resultado(String correo, Long intentoId) {
-        IntentoQuiz intento = intentoPropio(correo, intentoId);
+        return revision(intentoPropio(correo, intentoId));
+    }
+
+    @Override
+    public QuizResultadoResponse resultadoDeEstudiante(Long estudianteId, Long intentoId) {
+        IntentoQuiz intento = port.buscarIntento(intentoId)
+                .filter(i -> i.usuarioId().equals(estudianteId))
+                .orElseThrow(() -> new QuizNoEncontradoException("Quiz no encontrado"));
+        return revision(intento);
+    }
+
+    private QuizResultadoResponse revision(IntentoQuiz intento) {
+        Long intentoId = intento.id();
         if (!intento.finalizado()) {
             throw new IllegalArgumentException("Este quiz todavía no se ha entregado");
         }

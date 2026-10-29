@@ -1,6 +1,6 @@
 package co.edu.ucundinamarca.saesu.usuario.application.service;
 
-import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc.LogrosJdbcRepository;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.output.LogrosPort;
 
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.UsuarioResponse;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.UsuarioNoEncontradoException;
@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service;
 public class ObtenerPerfilService implements ObtenerPerfilUseCase {
 
     private final UsuarioRepositoryPort usuarioRepository;
-    private final LogrosJdbcRepository gamificacion;
+    private final LogrosPort gamificacion;
 
-    public ObtenerPerfilService(UsuarioRepositoryPort usuarioRepository, LogrosJdbcRepository gamificacion) {
+    public ObtenerPerfilService(UsuarioRepositoryPort usuarioRepository, LogrosPort gamificacion) {
         this.usuarioRepository = usuarioRepository;
         this.gamificacion = gamificacion;
     }

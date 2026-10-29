@@ -1,9 +1,7 @@
 package co.edu.ucundinamarca.saesu.gamificacion.adapters.input.rest;
 
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.LogroResponse;
-import co.edu.ucundinamarca.saesu.gamificacion.application.service.LogrosService;
-import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.entity.UsuarioEntity;
-import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.repository.UsuarioJpaRepository;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.input.LogrosUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -14,25 +12,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/** Adaptador de entrada: solo traduce HTTP al puerto LogrosUseCase (no conoce JPA ni SQL). */
 @RestController
 @RequestMapping("/api/logros")
 @Tag(name = "Gamificación", description = "Logros del estudiante")
 public class LogrosController {
 
-    private final LogrosService logrosService;
-    private final UsuarioJpaRepository usuarioRepository;
+    private final LogrosUseCase logros;
 
-    public LogrosController(LogrosService logrosService, UsuarioJpaRepository usuarioRepository) {
-        this.logrosService = logrosService;
-        this.usuarioRepository = usuarioRepository;
+    public LogrosController(LogrosUseCase logros) {
+        this.logros = logros;
     }
 
     @Operation(summary = "Mis logros",
             description = "Devuelve los 11 logros con su estado (obtenido y fecha). Evalúa primero si se desbloqueó alguno nuevo. Requiere JWT.")
     @GetMapping
     public ResponseEntity<List<LogroResponse>> misLogros(Authentication authentication) {
-        UsuarioEntity usuario = usuarioRepository.findByCorreo(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        return ResponseEntity.ok(logrosService.listar(usuario.getId()));
+        return ResponseEntity.ok(logros.listar(authentication.getName()));
     }
 }

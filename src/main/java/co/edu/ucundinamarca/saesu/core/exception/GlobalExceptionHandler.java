@@ -134,6 +134,17 @@ public class GlobalExceptionHandler {
     // Fallback
     // ============================================
 
+    /** Ruta que no existe: antes caía en el manejador general y respondía 500. */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRutaInexistente(Exception ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.NOT_FOUND, "La ruta no existe", req.getRequestURI());
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMetodoNoPermitido(Exception ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "Método no permitido en esta ruta", req.getRequestURI());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest req) {
         // El detalle queda en los logs; al cliente no se le muestran mensajes internos

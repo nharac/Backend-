@@ -8,6 +8,10 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - LOG_PATH=/app/logs
+    volumes:
+      # Los logs sobreviven a reconstruir el contenedor: quedan en ./logs del servidor
+      - ./logs:/app/logs
     restart: unless-stopped
     networks:
       - saesu-network

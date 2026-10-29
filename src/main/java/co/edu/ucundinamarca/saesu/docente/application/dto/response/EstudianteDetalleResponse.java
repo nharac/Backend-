@@ -16,8 +16,21 @@ public record EstudianteDetalleResponse(
         long respuestasOficiales,
         List<IntentoReciente> ultimosIntentos,
         List<PreguntaConFallos> preguntasConMasFallos,
-        List<EstadisticasGrupoResponse.ActividadDia> actividad
+        List<EstadisticasGrupoResponse.ActividadDia> actividad,
+        List<QuizRealizado> quices
 ) {
+
+    /** Quiz entregado por el estudiante; el docente puede abrir la revisión con su id. */
+    public record QuizRealizado(
+            Long id,
+            String tema,
+            int correctas,
+            int total,
+            int porcentaje,
+            long duracionSegundos,
+            boolean fueraDeTiempo,
+            LocalDateTime fecha
+    ) {}
 
     public record IntentoReciente(
             Long preguntaId,

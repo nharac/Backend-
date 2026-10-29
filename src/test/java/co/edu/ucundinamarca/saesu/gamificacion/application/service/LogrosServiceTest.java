@@ -1,7 +1,7 @@
 package co.edu.ucundinamarca.saesu.gamificacion.application.service;
 
-import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc.LogrosJdbcRepository;
-import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc.LogrosJdbcRepository.Estadisticas;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.output.LogrosPort;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.output.LogrosPort.Estadisticas;
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.LogroResponse;
 import co.edu.ucundinamarca.saesu.gamificacion.domain.model.Logro;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +31,7 @@ class LogrosServiceTest {
 
     private static final Long U = 5L;
 
-    @Mock private LogrosJdbcRepository repo;
+    @Mock private LogrosPort repo;
     @InjectMocks private LogrosService servicio;
 
     /** Cifras del estudiante; cada prueba cambia solo lo que necesita. */

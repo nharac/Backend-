@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logs de SAESU.
+
+  - Consola: siempre. Es lo que muestra `docker logs saesu-backend` (factor XI de 12-factor:
+    los logs son un flujo de eventos y el entorno decide a dónde van).
+  - Archivo: solo con el perfil prod (el que usa docker-compose). Queda en ${LOG_PATH}/saesu.log,
+    rota cada día o al llegar a 10 MB y guarda 14 días (máximo 200 MB en total).
+  - errores.log: solo WARN y ERROR, para revisar rápido qué falló.
+
+  Cada línea lleva [requestId usuario] para seguir una petición completa:
+  2026-10-30 09:12:44.120 INFO  [a1b2c3d4 la***@ucundinamarca.edu.co] saesu.http : GET /api/quiz/historial -> 200 (38 ms)
+-->
+<configuration>
+
+    <springProperty scope="context" name="APP" source="spring.application.name" defaultValue="saesu-backend"/>
+    <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
+    <property name="PATRON"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId:--} %X{usuario:--}] %logger{36} : %msg%n"/>
+    <property name="PATRON_CONSOLA"
+              value="%d{HH:mm:ss.SSS} %highlight(%-5level) [%cyan(%X{requestId:--}) %X{usuario:--}] %magenta(%logger{36}) : %msg%n"/>
+
+    <appender name="CONSOLA" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${PATRON_CONSOLA}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <springProfile name="prod">
+        <appender name="ARCHIVO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/saesu.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/saesu-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>14</maxHistory>
+                <totalSizeCap>200MB</totalSizeCap>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${PATRON}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <appender name="ERRORES" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/errores.log</file>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>WARN</level>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/errores-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>30</maxHistory>
+                <totalSizeCap>100MB</totalSizeCap>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${PATRON}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <!-- El archivo se escribe en otro hilo para no frenar las peticiones -->
+        <appender name="ARCHIVO_ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+            <queueSize>1024</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+            <appender-ref ref="ARCHIVO"/>
+        </appender>
+    </springProfile>
+
+    <!-- Ruido de librerías: solo advertencias -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="software.amazon" level="WARN"/>
+
+    <springProfile name="!prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLA"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLA"/>
+            <appender-ref ref="ARCHIVO_ASYNC"/>
+            <appender-ref ref="ERRORES"/>
+        </root>
+    </springProfile>
+</configuration>

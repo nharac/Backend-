@@ -20,6 +20,16 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.11.5</jjwt.version>
+
+        <!-- SonarQube: análisis con `mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.token=...` -->
+        <sonar.projectKey>saesu-backend</sonar.projectKey>
+        <sonar.projectName>SAESU Backend</sonar.projectName>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <!-- DTOs, configuración y el main no tienen lógica que probar: no cuentan para la cobertura -->
+        <sonar.coverage.exclusions>
+            **/dto/**,**/config/**,**/*Application.java,**/domain/model/**,**/adapters/output/jpa/entity/**
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -160,6 +170,27 @@
 
     <build>
         <plugins>
+                    <!-- JaCoCo para medir cobertura de pruebas -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

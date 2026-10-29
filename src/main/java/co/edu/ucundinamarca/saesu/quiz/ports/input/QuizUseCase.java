@@ -15,4 +15,7 @@ public interface QuizUseCase {
     QuizResultadoResponse resultado(String correo, Long intentoId);
 
     QuizHistorialResponse historial(String correo);
+
+    /** Para el docente: revisión de un quiz entregado por un estudiante (404 si no es de ese estudiante). */
+    QuizResultadoResponse resultadoDeEstudiante(Long estudianteId, Long intentoId);
 }
