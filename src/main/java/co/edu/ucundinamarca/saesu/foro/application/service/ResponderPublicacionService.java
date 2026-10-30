@@ -16,6 +16,7 @@ import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.Collections;
 /**
  * Caso de uso: responder a una publicación o a otra respuesta (anidamiento 1 nivel).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ResponderPublicacionService implements ResponderPublicacionUseCase {
@@ -93,7 +95,7 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
                 );
             }
         } catch (Exception e) {
-            System.err.println("Error enviando correo de notificación del foro: " + e.getMessage());
+            log.warn("No se pudo enviar el aviso de nueva respuesta de la publicación {}: {}", publicacionId, e.getMessage());
         }
 
         // PUNTOS POR RESPONDER EN EL FORO: +10, máximo 3 por día y no en publicaciones propias

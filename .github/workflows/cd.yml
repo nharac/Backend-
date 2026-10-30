@@ -1,0 +1,51 @@
+# Despliegue continuo del backend de SAESU en el servidor de AWS.
+# Corre cuando la CI de la rama main termina bien (o a mano desde la pestaña Actions).
+# Entra al servidor por SSH, trae la rama main y reconstruye el contenedor.
+#
+# Secretos necesarios (Settings → Secrets and variables → Actions):
+#   EC2_HOST      dirección IP o dominio del servidor
+#   EC2_USER      usuario SSH (por ejemplo ubuntu o ec2-user)
+#   EC2_SSH_KEY   contenido completo de la llave privada .pem
+#   EC2_RUTA_BACKEND  carpeta del backend en el servidor (por ejemplo /home/ubuntu/Backend-)
+# El .env NO va en GitHub: debe existir ya en esa carpeta del servidor.
+name: CD backend
+
+on:
+  workflow_run:
+    workflows: [CI backend]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  desplegar:
+    name: Desplegar en AWS
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    environment: produccion
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+    steps:
+      - name: Verificar que estén los secretos
+        if: env.EC2_HOST == ''
+        run: |
+          echo "::warning::Faltan los secretos EC2_HOST, EC2_USER, EC2_SSH_KEY y EC2_RUTA_BACKEND; no se despliega."
+          exit 0
+
+      - name: Actualizar y reconstruir en el servidor
+        if: env.EC2_HOST != ''
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            cd "${{ secrets.EC2_RUTA_BACKEND }}"
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+            docker compose up -d --build
+            docker image prune -f
+            sleep 20
+            curl -fsS http://localhost:8080/actuator/health
