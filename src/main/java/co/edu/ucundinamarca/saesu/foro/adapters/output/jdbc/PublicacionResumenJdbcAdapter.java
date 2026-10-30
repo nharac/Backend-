@@ -18,13 +18,21 @@ import java.util.List;
 @Component
 public class PublicacionResumenJdbcAdapter implements PublicacionResumenPort {
 
-    private static final String SELECT = """
+    private static final String SELECT_PLANTILLA = """
             SELECT p.id, p.titulo, LEFT(p.contenido, %d) AS inicio, p.tema, p.fecha_creacion, p.imagen_url,
                    u.id AS autor_id, u.nombre AS autor_nombre, u.rol AS autor_rol,
                    (SELECT COUNT(*) FROM respuestas r WHERE r.publicacion_id = p.id) AS respuestas
             FROM publicaciones p
             JOIN usuarios u ON u.id = p.usuario_id
-            """.formatted(LARGO_INICIO);
+            """;
+    private static final String SELECT = SELECT_PLANTILLA.formatted(LARGO_INICIO);
+
+    private static final String SQL_SIN_RESPUESTA_OFICIAL = (SELECT_PLANTILLA + """
+             WHERE p.activa = TRUE
+               AND NOT EXISTS (SELECT 1 FROM respuestas r
+                               WHERE r.publicacion_id = p.id AND r.es_oficial = TRUE)
+             ORDER BY p.fecha_creacion DESC, p.id DESC
+            """).formatted(LARGO_INICIO);
 
     private static final RowMapper<PublicacionResumen> FILA = (rs, i) -> {
         Timestamp fecha = rs.getTimestamp("fecha_creacion");
@@ -70,12 +78,7 @@ public class PublicacionResumenJdbcAdapter implements PublicacionResumenPort {
 
     @Override
     public List<PublicacionResumen> listarSinRespuestaOficial() {
-        return jdbc.query(SELECT + """
-                 WHERE p.activa = TRUE
-                   AND NOT EXISTS (SELECT 1 FROM respuestas r
-                                   WHERE r.publicacion_id = p.id AND r.es_oficial = TRUE)
-                 ORDER BY p.fecha_creacion DESC, p.id DESC
-                """, FILA);
+        return jdbc.query(SQL_SIN_RESPUESTA_OFICIAL, FILA);
     }
 
     private static String ordenSql(String orden) {

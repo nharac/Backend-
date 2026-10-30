@@ -30,7 +30,7 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
     private static final String ES_ESTUDIANTE = "UPPER(REPLACE(u.rol, 'ROLE_', '')) = 'ESTUDIANTE'";
     private static final String HOY = "(NOW() AT TIME ZONE 'America/Bogota')::date";
 
-    private static final String SELECT_ESTUDIANTE = """
+    private static final String SELECT_ESTUDIANTE_PLANTILLA = """
             SELECT u.id, u.nombre, u.correo, u.foto_perfil_url,
                    COALESCE((SELECT SUM(ph.cantidad) FROM puntos_historial ph WHERE ph.usuario_id = u.id), 0) AS puntos,
                    CASE WHEN u.ultima_fecha_practica >= %s - 1
@@ -50,7 +50,41 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
             ) q ON TRUE
             LEFT JOIN respuestas_estudiante r ON r.usuario_id = u.id
             WHERE %s
-            """.formatted(HOY, ES_ESTUDIANTE);
+            """;
+
+    // Consultas completas armadas una sola vez a partir de constantes (nunca con datos del usuario)
+    private static final String GRUPO_ESTUDIANTE = " GROUP BY u.id, q.quices, q.promedio_quiz, q.ultimo_quiz";
+    private static final String SQL_LISTAR_ESTUDIANTES = (SELECT_ESTUDIANTE_PLANTILLA + GRUPO_ESTUDIANTE + " ORDER BY LOWER(u.nombre)")
+            .formatted(HOY, ES_ESTUDIANTE);
+    private static final String SQL_BUSCAR_ESTUDIANTE = (SELECT_ESTUDIANTE_PLANTILLA + " AND u.id = ?" + GRUPO_ESTUDIANTE)
+            .formatted(HOY, ES_ESTUDIANTE);
+
+    private static final String PROGRESO_POR_TEMA_PLANTILLA = """
+            SELECT r.usuario_id, p.tema, COUNT(*) AS intentos,
+                   COUNT(*) FILTER (WHERE r.es_correcta) AS correctas,
+                   COUNT(DISTINCT r.pregunta_id) FILTER (WHERE r.es_correcta AND p.activa) AS resueltas
+            FROM respuestas_estudiante r
+            JOIN preguntas p ON p.id = r.pregunta_id
+            JOIN usuarios u ON u.id = r.usuario_id
+            WHERE %s
+            """;
+    private static final String SQL_PROGRESO_TODOS = (PROGRESO_POR_TEMA_PLANTILLA + " GROUP BY r.usuario_id, p.tema")
+            .formatted(ES_ESTUDIANTE);
+    private static final String SQL_PROGRESO_DE = (PROGRESO_POR_TEMA_PLANTILLA + " AND r.usuario_id = ? GROUP BY r.usuario_id, p.tema")
+            .formatted(ES_ESTUDIANTE);
+
+    private static final String ACTIVIDAD = """
+            SELECT d::date AS fecha, COUNT(r.id) AS intentos, COUNT(DISTINCT r.usuario_id) AS estudiantes
+            FROM generate_series(%1$s - ?, %1$s, INTERVAL '1 day') AS d
+            LEFT JOIN respuestas_estudiante r
+                   ON (r.fecha_intento AT TIME ZONE 'America/Bogota')::date = d::date
+                  %2$s
+            GROUP BY d
+            ORDER BY d
+            """;
+    private static final String SQL_ACTIVIDAD_GRUPO = ACTIVIDAD.formatted(HOY,
+            "AND r.usuario_id IN (SELECT u.id FROM usuarios u WHERE " + ES_ESTUDIANTE + ")");
+    private static final String SQL_ACTIVIDAD_ESTUDIANTE = ACTIVIDAD.formatted(HOY, "AND r.usuario_id = ?");
 
     private final JdbcTemplate jdbc;
 
@@ -80,33 +114,24 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
 
     @Override
     public List<FilaEstudiante> listarEstudiantes() {
-        return jdbc.query(SELECT_ESTUDIANTE + " GROUP BY u.id, q.quices, q.promedio_quiz, q.ultimo_quiz ORDER BY LOWER(u.nombre)", FILA_ESTUDIANTE);
+        return jdbc.query(SQL_LISTAR_ESTUDIANTES, FILA_ESTUDIANTE);
     }
 
     @Override
     public Optional<FilaEstudiante> buscarEstudiante(Long usuarioId) {
-        return jdbc.query(SELECT_ESTUDIANTE + " AND u.id = ? GROUP BY u.id, q.quices, q.promedio_quiz, q.ultimo_quiz", FILA_ESTUDIANTE, usuarioId)
+        return jdbc.query(SQL_BUSCAR_ESTUDIANTE, FILA_ESTUDIANTE, usuarioId)
                 .stream().findFirst();
     }
 
     @Override
     public List<FilaTemaEstudiante> progresoPorTema(Long usuarioId) {
-        String sql = """
-                SELECT r.usuario_id, p.tema, COUNT(*) AS intentos,
-                       COUNT(*) FILTER (WHERE r.es_correcta) AS correctas,
-                       COUNT(DISTINCT r.pregunta_id) FILTER (WHERE r.es_correcta AND p.activa) AS resueltas
-                FROM respuestas_estudiante r
-                JOIN preguntas p ON p.id = r.pregunta_id
-                JOIN usuarios u ON u.id = r.usuario_id
-                WHERE %s
-                """.formatted(ES_ESTUDIANTE);
         RowMapper<FilaTemaEstudiante> mapper = (rs, i) -> new FilaTemaEstudiante(
                 rs.getLong("usuario_id"), rs.getString("tema"),
                 rs.getLong("intentos"), rs.getLong("correctas"), rs.getLong("resueltas"));
         if (usuarioId == null) {
-            return jdbc.query(sql + " GROUP BY r.usuario_id, p.tema", mapper);
+            return jdbc.query(SQL_PROGRESO_TODOS, mapper);
         }
-        return jdbc.query(sql + " AND r.usuario_id = ? GROUP BY r.usuario_id, p.tema", mapper, usuarioId);
+        return jdbc.query(SQL_PROGRESO_DE, mapper, usuarioId);
     }
 
     @Override
@@ -181,24 +206,12 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
 
     @Override
     public List<ActividadDia> actividad(int dias, Long usuarioId) {
-        String filtro = usuarioId == null
-                ? "AND r.usuario_id IN (SELECT u.id FROM usuarios u WHERE " + ES_ESTUDIANTE + ")"
-                : "AND r.usuario_id = ?";
-        String sql = """
-                SELECT d::date AS fecha, COUNT(r.id) AS intentos, COUNT(DISTINCT r.usuario_id) AS estudiantes
-                FROM generate_series(%s - ?, %s, INTERVAL '1 day') AS d
-                LEFT JOIN respuestas_estudiante r
-                       ON (r.fecha_intento AT TIME ZONE 'America/Bogota')::date = d::date
-                      %s
-                GROUP BY d
-                ORDER BY d
-                """.formatted(HOY, HOY, filtro);
         RowMapper<ActividadDia> mapper = (rs, i) -> new ActividadDia(
                 rs.getDate("fecha").toLocalDate(), rs.getLong("intentos"), rs.getLong("estudiantes"));
         int desde = Math.max(dias, 1) - 1;
         return usuarioId == null
-                ? jdbc.query(sql, mapper, desde)
-                : jdbc.query(sql, mapper, desde, usuarioId);
+                ? jdbc.query(SQL_ACTIVIDAD_GRUPO, mapper, desde)
+                : jdbc.query(SQL_ACTIVIDAD_ESTUDIANTE, mapper, desde, usuarioId);
     }
 
     @Override

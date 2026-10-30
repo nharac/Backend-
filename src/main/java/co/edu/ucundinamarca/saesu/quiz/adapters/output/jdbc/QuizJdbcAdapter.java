@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /** Quiz con SQL directo sobre quiz_intentos y quiz_preguntas (V20) y el banco de preguntas. */
@@ -77,7 +78,7 @@ public class QuizJdbcAdapter implements QuizRepositoryPort {
             ps.setObject(5, OffsetDateTime.ofInstant(limiteEn, ZoneOffset.UTC));
             return ps;
         }, llave);
-        Long id = llave.getKey().longValue();
+        Long id = Objects.requireNonNull(llave.getKey(), "La BD no devolvió el id del intento").longValue();
 
         List<Object[]> filas = new ArrayList<>();
         for (int i = 0; i < preguntaIds.size(); i++) {

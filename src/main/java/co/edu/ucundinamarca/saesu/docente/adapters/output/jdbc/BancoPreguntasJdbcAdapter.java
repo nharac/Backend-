@@ -5,8 +5,10 @@ import co.edu.ucundinamarca.saesu.docente.application.dto.response.PreguntaDocen
 import co.edu.ucundinamarca.saesu.docente.application.dto.response.PreguntaDocenteResponse.OpcionDocente;
 import co.edu.ucundinamarca.saesu.docente.ports.output.BancoPreguntasPort;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,9 +25,12 @@ import java.util.Optional;
 public class BancoPreguntasJdbcAdapter implements BancoPreguntasPort {
 
     private final JdbcTemplate jdbc;
+    /** Para "IN (:ids)": Spring expande la lista en parámetros, sin armar el SQL a mano. */
+    private final NamedParameterJdbcTemplate jdbcConNombres;
 
     public BancoPreguntasJdbcAdapter(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.jdbcConNombres = new NamedParameterJdbcTemplate(jdbc);
     }
 
     private record FilaPregunta(Long id, String tema, String enunciado, String dificultad, String pista,
@@ -92,14 +97,15 @@ public class BancoPreguntasJdbcAdapter implements BancoPreguntasPort {
         if (ids.isEmpty()) {
             return mapa;
         }
-        String marcas = String.join(",", ids.stream().map(id -> "?").toList());
-        jdbc.query("SELECT id, pregunta_id, letra, texto, es_correcta FROM opciones WHERE pregunta_id IN ("
-                        + marcas + ") ORDER BY pregunta_id, letra",
-                rs -> {
+        jdbcConNombres.query("""
+                        SELECT id, pregunta_id, letra, texto, es_correcta FROM opciones
+                        WHERE pregunta_id IN (:ids) ORDER BY pregunta_id, letra
+                        """, Map.of("ids", ids),
+                (ResultSet rs) -> {
                     mapa.computeIfAbsent(rs.getLong("pregunta_id"), k -> new ArrayList<>())
                             .add(new OpcionDocente(rs.getLong("id"), rs.getString("letra").trim(),
                                     rs.getString("texto"), rs.getBoolean("es_correcta")));
-                }, ids.toArray());
+                });
         return mapa;
     }
 

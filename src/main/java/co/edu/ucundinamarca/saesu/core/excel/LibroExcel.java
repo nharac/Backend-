@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -252,8 +254,9 @@ public class LibroExcel {
 
     /** Fecha como número de días desde el 30/12/1899 (así guarda Excel las fechas). */
     static double serialExcel(LocalDateTime fecha) {
-        LocalDateTime base = LocalDateTime.of(1899, 12, 30, 0, 0);
-        return ChronoUnit.SECONDS.between(base, fecha) / 86400.0;
+        // Excel no maneja zonas horarias: se calcula en UTC para que no influya ningún cambio de hora
+        OffsetDateTime base = LocalDateTime.of(1899, 12, 30, 0, 0).atOffset(ZoneOffset.UTC);
+        return ChronoUnit.SECONDS.between(base, fecha.atOffset(ZoneOffset.UTC)) / 86400.0;
     }
 
     private static String numero(double d) {

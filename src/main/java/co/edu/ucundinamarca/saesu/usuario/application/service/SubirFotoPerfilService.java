@@ -21,7 +21,8 @@ public class SubirFotoPerfilService {
 
     public String ejecutar(String correo, MultipartFile archivo) throws IOException {
         // 1. Validar que sea una imagen
-        if (archivo.isEmpty() || archivo.getContentType() == null || !archivo.getContentType().startsWith("image/")) {
+        String tipo = archivo.getContentType();
+        if (archivo.isEmpty() || tipo == null || !tipo.startsWith("image/")) {
             throw new RuntimeException("El archivo debe ser una imagen válida (JPG, PNG, etc.)");
         }
 

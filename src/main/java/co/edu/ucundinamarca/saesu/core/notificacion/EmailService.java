@@ -38,7 +38,7 @@ public class EmailService {
         this.mailSender = mailSender;
         this.remitente = remitente;
         this.nombreRemitente = nombreRemitente;
-        this.urlApp = urlApp.replaceAll("/+$", "");
+        this.urlApp = sinBarraFinal(urlApp);
     }
 
     @Async
@@ -212,6 +212,15 @@ public class EmailService {
                   <a href="%s" style="display:inline-block;padding:14px 30px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px">%s →</a>
                 </td></tr></table>
                 """.formatted(esc(url), esc(texto));
+    }
+
+    /** "https://saesu.app///" → "https://saesu.app" (sin regex: evita backtracking, regla S8786). */
+    static String sinBarraFinal(String url) {
+        int fin = url.length();
+        while (fin > 0 && url.charAt(fin - 1) == '/') {
+            fin--;
+        }
+        return url.substring(0, fin);
     }
 
     private static String primerNombre(String nombre) {

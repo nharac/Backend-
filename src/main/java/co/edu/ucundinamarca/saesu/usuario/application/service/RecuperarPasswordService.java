@@ -18,6 +18,7 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 /**
@@ -33,6 +34,9 @@ import java.util.Optional;
  */
 @Service
 public class RecuperarPasswordService {
+
+    /** Hora de Colombia: las diferencias de tiempo se calculan con zona (regla S8700). */
+    private static final ZoneId ZONA = ZoneId.of("America/Bogota");
 
     static final int MINUTOS_VIGENCIA = 15;
     static final int MAX_INTENTOS = 5;
@@ -77,7 +81,7 @@ public class RecuperarPasswordService {
 
         Optional<LocalDateTime> ultimo = codigoPort.fechaUltimoCodigo(id);
         if (ultimo.isPresent()
-                && Duration.between(ultimo.get(), LocalDateTime.now(clock)).getSeconds() < SEGUNDOS_ENTRE_CODIGOS) {
+                && Duration.between(ultimo.get().atZone(ZONA), LocalDateTime.now(clock).atZone(ZONA)).getSeconds() < SEGUNDOS_ENTRE_CODIGOS) {
             return; // ya se envió uno hace menos de un minuto
         }
 

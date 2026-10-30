@@ -32,7 +32,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            // CSRF no aplica: la API es sin estado (STATELESS) y el JWT viaja en la cabecera Authorization,
+            // no en cookies, así que el navegador no lo envía solo desde otro sitio.
+            .csrf(csrf -> csrf.disable()) // NOSONAR java:S4502 — revisado: API REST sin cookies de sesión
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth

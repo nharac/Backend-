@@ -22,7 +22,7 @@ public class RankingJdbcAdapter implements RankingPort {
             "CASE WHEN u.ultima_fecha_practica >= " + HOY + " - 1 THEN COALESCE(u.racha_actual, 0) ELSE 0 END";
 
     /** Puntos por estudiante en el periodo, con su posición. */
-    private static final String RANKING = """
+    private static final String RANKING_PLANTILLA = """
             WITH puntos AS (
                 SELECT u.id, u.nombre, u.foto_perfil_url, %s AS racha, SUM(p.cantidad) AS puntos
                 FROM usuarios u
@@ -39,9 +39,19 @@ public class RankingJdbcAdapter implements RankingPort {
                        LAG(nombre) OVER (ORDER BY puntos DESC, id) AS nombre_arriba
                 FROM puntos
             )
-            """.formatted(RACHA);
+            """;
 
     /** "Desde siempre": cualquier fecha anterior a la primera migración sirve. */
+    // Consultas completas armadas una sola vez a partir de constantes (sin datos del usuario)
+    private static final String SQL_TOP = (RANKING_PLANTILLA + "SELECT * FROM ordenado ORDER BY posicion LIMIT ?").formatted(RACHA);
+    private static final String SQL_POSICION = (RANKING_PLANTILLA + "SELECT * FROM ordenado WHERE id = ?").formatted(RACHA);
+    private static final String SQL_PARTICIPANTES = (RANKING_PLANTILLA + "SELECT COUNT(*) FROM ordenado").formatted(RACHA);
+    private static final String SQL_RESUMEN = "SELECT " + RACHA + " AS racha, "
+            + "COALESCE((SELECT SUM(cantidad) FILTER (WHERE fecha >= ?) FROM puntos_historial WHERE usuario_id = u.id), 0) AS hoy, "
+            + "COALESCE((SELECT SUM(cantidad) FILTER (WHERE fecha >= ?) FROM puntos_historial WHERE usuario_id = u.id), 0) AS semana, "
+            + "COALESCE((SELECT SUM(cantidad) FROM puntos_historial WHERE usuario_id = u.id), 0) AS total "
+            + "FROM usuarios u WHERE u.id = ?";
+
     private static final LocalDateTime INICIO = LocalDateTime.of(2000, 1, 1, 0, 0);
 
     private final JdbcTemplate jdbc;
@@ -56,7 +66,7 @@ public class RankingJdbcAdapter implements RankingPort {
 
     @Override
     public List<FilaRanking> top(LocalDateTime desde, int limite) {
-        return jdbc.query(RANKING + "SELECT * FROM ordenado ORDER BY posicion LIMIT ?",
+        return jdbc.query(SQL_TOP,
                 (rs, i) -> new FilaRanking(
                         rs.getInt("posicion"),
                         rs.getLong("id"),
@@ -69,7 +79,7 @@ public class RankingJdbcAdapter implements RankingPort {
 
     @Override
     public Optional<PosicionUsuario> posicionDe(Long usuarioId, LocalDateTime desde) {
-        return jdbc.query(RANKING + "SELECT * FROM ordenado WHERE id = ?",
+        return jdbc.query(SQL_POSICION,
                 (rs, i) -> new PosicionUsuario(
                         rs.getInt("posicion"),
                         rs.getLong("puntos"),
@@ -81,17 +91,13 @@ public class RankingJdbcAdapter implements RankingPort {
 
     @Override
     public long participantes(LocalDateTime desde) {
-        Long n = jdbc.queryForObject(RANKING + "SELECT COUNT(*) FROM ordenado", Long.class, ts(desde));
+        Long n = jdbc.queryForObject(SQL_PARTICIPANTES, Long.class, ts(desde));
         return n == null ? 0 : n;
     }
 
     @Override
     public ResumenPuntos resumenPuntos(Long usuarioId, LocalDateTime inicioHoy, LocalDateTime inicioSemana) {
-        List<ResumenPuntos> r = jdbc.query("SELECT " + RACHA + " AS racha, "
-                        + "COALESCE((SELECT SUM(cantidad) FILTER (WHERE fecha >= ?) FROM puntos_historial WHERE usuario_id = u.id), 0) AS hoy, "
-                        + "COALESCE((SELECT SUM(cantidad) FILTER (WHERE fecha >= ?) FROM puntos_historial WHERE usuario_id = u.id), 0) AS semana, "
-                        + "COALESCE((SELECT SUM(cantidad) FROM puntos_historial WHERE usuario_id = u.id), 0) AS total "
-                        + "FROM usuarios u WHERE u.id = ?",
+        List<ResumenPuntos> r = jdbc.query(SQL_RESUMEN,
                 (rs, i) -> new ResumenPuntos(rs.getInt("racha"), rs.getLong("hoy"), rs.getLong("semana"), rs.getLong("total")),
                 ts(inicioHoy), ts(inicioSemana), usuarioId);
         return r.isEmpty() ? new ResumenPuntos(0, 0, 0, 0) : r.get(0);

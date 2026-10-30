@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class EstadisticasDocenteService {
+
+    /** Hora de Colombia: las diferencias de tiempo se calculan con zona (regla S8700). */
+    private static final ZoneId ZONA = ZoneId.of("America/Bogota");
 
     static final int DIAS_SIN_PRACTICAR = 7;
     static final int DIAS_COMO_NUEVO = 7;
@@ -120,7 +124,7 @@ public class EstadisticasDocenteService {
 
     private static EstudianteDetalleResponse.QuizRealizado quiz(EstadisticasDocentePort.QuizEstudiante q) {
         long segundos = q.iniciadoEn() == null || q.finalizadoEn() == null ? 0
-                : Math.max(0, Duration.between(q.iniciadoEn(), q.finalizadoEn()).toSeconds());
+                : Math.max(0, Duration.between(q.iniciadoEn().atZone(ZONA), q.finalizadoEn().atZone(ZONA)).toSeconds());
         int pct = q.total() == 0 ? 0 : (int) Math.round(100.0 * q.correctas() / q.total());
         return new EstudianteDetalleResponse.QuizRealizado(q.id(), q.tema(), q.correctas(), q.total(), pct,
                 segundos, q.fueraDeTiempo(), q.finalizadoEn());
@@ -155,7 +159,7 @@ public class EstadisticasDocenteService {
     /** Días que le quedan como "nuevo" (mínimo 1), o null si ya pasó ese tiempo. */
     Integer diasDeGracia(LocalDateTime fechaRegistro) {
         if (fechaRegistro == null) return null;
-        long horas = Duration.between(fechaRegistro, LocalDateTime.now(clock)).toHours();
+        long horas = Duration.between(fechaRegistro.atZone(ZONA), LocalDateTime.now(clock).atZone(ZONA)).toHours();
         long restantes = DIAS_COMO_NUEVO * 24L - horas;
         return restantes > 0 ? (int) Math.max(1, (restantes + 23) / 24) : null;
     }
@@ -171,7 +175,7 @@ public class EstadisticasDocenteService {
         if (ultimaActividad == null) {
             motivos.add("No ha practicado ni hecho quices");
         } else {
-            long dias = Duration.between(ultimaActividad, LocalDateTime.now(clock)).toDays();
+            long dias = Duration.between(ultimaActividad.atZone(ZONA), LocalDateTime.now(clock).atZone(ZONA)).toDays();
             if (dias > DIAS_SIN_PRACTICAR) {
                 motivos.add("Sin actividad hace " + dias + " días");
             }
