@@ -25,9 +25,15 @@ public class RespuestaResponse {
     private LocalDateTime fechaCreacion;
     private List<RespuestaResponse> respuestasHijas;   // lista vacía si no tiene hijas
     private boolean oculta;                            // ocultada por un docente (el contenido no se envía)
+    private String imagenUrl;                          // imagen opcional (null si no tiene o está oculta)
 
     public RespuestaResponse(Long id, AutorResponse autor, String contenido, boolean esOficial,
                              LocalDateTime fechaCreacion, List<RespuestaResponse> respuestasHijas) {
-        this(id, autor, contenido, esOficial, fechaCreacion, respuestasHijas, false);
+        this(id, autor, contenido, esOficial, fechaCreacion, respuestasHijas, false, null);
+    }
+
+    public RespuestaResponse(Long id, AutorResponse autor, String contenido, boolean esOficial,
+                             LocalDateTime fechaCreacion, List<RespuestaResponse> respuestasHijas, boolean oculta) {
+        this(id, autor, contenido, esOficial, fechaCreacion, respuestasHijas, oculta, null);
     }
 }

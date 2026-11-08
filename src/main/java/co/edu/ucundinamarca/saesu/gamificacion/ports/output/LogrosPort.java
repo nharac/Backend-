@@ -1,5 +1,7 @@
 package co.edu.ucundinamarca.saesu.gamificacion.ports.output;
 
+import co.edu.ucundinamarca.saesu.gamificacion.domain.model.Cifra;
+
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -11,11 +13,15 @@ public interface LogrosPort {
 
     /**
      * Lo que se necesita para evaluar los logros.
-     * @param temas por tema: {preguntas activas del tema, de esas cuántas ha acertado alguna vez}
+     * @param cifras las cifras de base de datos del estudiante (las que falten valen 0)
+     * @param temas  por tema: {preguntas activas del tema, de esas cuántas ha acertado alguna vez}
+     * @param correo para los logros exclusivos (p. ej. desarrolladores)
      */
-    record Estadisticas(long aciertos, long acertadasAlPrimerIntento, long racha,
-                        long publicaciones, long respuestasForo, long respuestasOficiales,
-                        long puntos, Map<String, long[]> temas) {
+    record Estadisticas(Map<Cifra, Long> cifras, Map<String, long[]> temas, String correo) {
+
+        public long get(Cifra cifra) {
+            return cifras.getOrDefault(cifra, 0L);
+        }
 
         public long preguntasDelTema(String tema) {
             long[] t = temas.get(tema);

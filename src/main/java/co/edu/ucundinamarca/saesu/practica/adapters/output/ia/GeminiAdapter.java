@@ -12,8 +12,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.Exceptions;
 
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +51,13 @@ public class GeminiAdapter implements IaServicePort {
 
     @Value("${gemini.api.url}")
     private String baseUrl;
+
+    /**
+     * Cuánto se espera a Gemini por intento. Los modelos que "piensan" pueden tardar más de 30 s
+     * en preguntas difíciles; con menos tiempo el tutor se quedaba sin responder.
+     */
+    @Value("${gemini.timeout-segundos:60}")
+    private long timeoutSegundos = 60;
 
     public GeminiAdapter(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
         this.webClient = webClientBuilder.build();
@@ -92,6 +101,12 @@ public class GeminiAdapter implements IaServicePort {
                 throw e;
 
             } catch (Exception e) {
+                // Si ya esperamos el tiempo completo, reintentar solo haría esperar más al estudiante
+                if (Exceptions.unwrap(e) instanceof TimeoutException) {
+                    log.warn("Gemini no respondió en {} s", timeoutSegundos);
+                    throw new IaNoDisponibleException(
+                            "El tutor se tardó demasiado en responder. Intenta de nuevo o haz una pregunta más corta.", e);
+                }
                 log.error("Error inesperado al llamar a Gemini", e);
                 ultimaExcepcion = e;
                 if (intento < MAX_REINTENTOS) {
@@ -133,7 +148,7 @@ public class GeminiAdapter implements IaServicePort {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(30))
+                .timeout(Duration.ofSeconds(timeoutSegundos))
                 .block();
 
         if (respuestaJson == null || respuestaJson.isBlank()) {

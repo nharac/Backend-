@@ -25,4 +25,11 @@ public class ResponderPublicacionRequest {
      * Null → respuesta directa a la publicación.
      */
     private Long respuestaPadreId;
+
+    /** URL de una imagen subida antes a POST /api/foro/imagenes (opcional). */
+    private String imagenUrl;
+
+    public ResponderPublicacionRequest(String contenido, Long respuestaPadreId) {
+        this(contenido, respuestaPadreId, null);
+    }
 }

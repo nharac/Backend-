@@ -25,6 +25,12 @@ public class Respuesta {
     private Boolean esOficial;
     private LocalDateTime fechaCreacion;
     private boolean oculta;          // ocultada por un docente (moderación)
+    private String imagenUrl;        // imagen opcional (V24), subida antes a POST /api/foro/imagenes
+
+    public Respuesta(Long id, Long publicacionId, Long autorId, Long respuestaPadreId,
+                     String contenido, Boolean esOficial, LocalDateTime fechaCreacion, boolean oculta) {
+        this(id, publicacionId, autorId, respuestaPadreId, contenido, esOficial, fechaCreacion, oculta, null);
+    }
 
     /** Constructor sin el estado de moderación (respuestas nuevas: nunca están ocultas). */
     public Respuesta(Long id, Long publicacionId, Long autorId, Long respuestaPadreId,

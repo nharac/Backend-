@@ -25,6 +25,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /** Consultas del módulo de práctica: listar preguntas, pista y progreso por tema. */
@@ -35,6 +36,7 @@ class ConsultasPracticaServicesTest {
     @Mock private OpcionRepositoryPort opciones;
     @Mock private RespuestaEstudianteRepositoryPort respuestas;
     @Mock private UsuarioRepositoryPort usuarios;
+    @Mock private co.edu.ucundinamarca.saesu.practica.ports.output.UsuarioConsultaPort usuarioConsulta;
 
     private Pregunta pregunta(Long id, String pista) {
         return new Pregunta(id, Tema.LIMITES, "¿Cuál es el límite de x² cuando x → 2?", Dificultad.BASICO, pista, null, null);
@@ -47,7 +49,7 @@ class ConsultasPracticaServicesTest {
         when(opciones.listarPorPreguntaId(7L)).thenReturn(List.of(
                 new Opcion(1L, 7L, "A", "2", false), new Opcion(2L, 7L, "B", "4", true)));
 
-        List<PreguntaResponse> r = new ListarPreguntasService(preguntas, opciones).listar("limites", "basico", 0, 10);
+        List<PreguntaResponse> r = new ListarPreguntasService(preguntas, opciones, usuarioConsulta).listar("limites", "basico", 0, 10);
 
         assertThat(r).hasSize(1);
         assertThat(r.get(0).getTema()).isEqualTo("limites");
@@ -59,10 +61,28 @@ class ConsultasPracticaServicesTest {
     }
 
     @Test
+    @DisplayName("Sesión de práctica: preguntas al azar del usuario, con un tamaño entre 1 y 50")
+    void sesionAlAzar() {
+        when(usuarioConsulta.obtenerIdPorCorreo("ana@u.edu.co")).thenReturn(4L);
+        when(preguntas.paraSesion(eq("limites"), eq(null), eq(4L), org.mockito.ArgumentMatchers.anyInt()))
+                .thenReturn(List.of(pregunta(9L, "Factoriza")));
+        when(opciones.listarPorPreguntaId(9L)).thenReturn(List.of(new Opcion(1L, 9L, "A", "2", true)));
+        ListarPreguntasService servicio = new ListarPreguntasService(preguntas, opciones, usuarioConsulta);
+
+        assertThat(servicio.sesion("limites", null, 10, "ana@u.edu.co")).singleElement()
+                .extracting(PreguntaResponse::getId).isEqualTo(9L);
+        servicio.sesion("limites", null, 500, "ana@u.edu.co");
+        servicio.sesion("limites", null, 0, "ana@u.edu.co");
+        org.mockito.Mockito.verify(preguntas).paraSesion("limites", null, 4L, 10);
+        org.mockito.Mockito.verify(preguntas).paraSesion("limites", null, 4L, ListarPreguntasService.MAX_SESION);
+        org.mockito.Mockito.verify(preguntas).paraSesion("limites", null, 4L, 1);
+    }
+
+    @Test
     @DisplayName("Contar preguntas delega al puerto")
     void contar() {
         when(preguntas.contar("derivadas", null)).thenReturn(15L);
-        assertThat(new ListarPreguntasService(preguntas, opciones).contar("derivadas", null)).isEqualTo(15L);
+        assertThat(new ListarPreguntasService(preguntas, opciones, usuarioConsulta).contar("derivadas", null)).isEqualTo(15L);
     }
 
     @Test

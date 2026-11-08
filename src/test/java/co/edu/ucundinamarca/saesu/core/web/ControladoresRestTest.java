@@ -1,5 +1,10 @@
 package co.edu.ucundinamarca.saesu.core.web;
 
+import co.edu.ucundinamarca.saesu.practica.adapters.input.rest.MiAvanceController;
+import co.edu.ucundinamarca.saesu.practica.application.dto.response.ActividadResponse;
+import co.edu.ucundinamarca.saesu.practica.application.dto.response.AnalisisResponse;
+import co.edu.ucundinamarca.saesu.practica.application.dto.response.MetaSemanalResponse;
+import co.edu.ucundinamarca.saesu.practica.ports.input.MiAvanceUseCase;
 import co.edu.ucundinamarca.saesu.core.exception.GlobalExceptionHandler;
 import co.edu.ucundinamarca.saesu.core.security.service.JwtService;
 import co.edu.ucundinamarca.saesu.foro.adapters.input.rest.ForoController;
@@ -71,6 +76,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -244,6 +250,10 @@ class ControladoresRestTest {
             mvc.perform(get("/api/practica/preguntas").param("tema", "limites")).andExpect(status().isOk());
             verify(listar).listar("limites", null, 0, 10);
 
+            when(listar.sesion(eq("limites"), eq(null), eq(10), any())).thenReturn(List.of());
+            mvc.perform(get("/api/practica/preguntas/sesion").param("tema", "limites").principal(AUTH)).andExpect(status().isOk());
+            verify(listar).sesion(eq("limites"), eq(null), eq(10), any());
+
             when(pista.obtenerPista(7L)).thenReturn(new PistaResponse(7L, "Factoriza", "Pista cargada correctamente"));
             mvc.perform(get("/api/practica/preguntas/7/pista"))
                     .andExpect(status().isOk())
@@ -287,12 +297,28 @@ class ControladoresRestTest {
         }
 
         @Test
+        @DisplayName("Foro: \"Me sirvió\" de una publicación y marcar una respuesta")
+        void meSirvio() throws Exception {
+            var utiles = mock(co.edu.ucundinamarca.saesu.foro.application.service.UtilesService.class);
+            MockMvc mvc = mvc(new co.edu.ucundinamarca.saesu.foro.adapters.input.rest.UtilesController(utiles));
+            when(utiles.dePublicacion(1L, LAURA)).thenReturn(
+                    new co.edu.ucundinamarca.saesu.foro.application.dto.response.UtilesResponse(java.util.Map.of(7L, 2L), List.of(7L)));
+            when(utiles.alternar(7L, LAURA)).thenReturn(
+                    new co.edu.ucundinamarca.saesu.foro.application.dto.response.UtilResponse(7L, 3L, true));
+
+            mvc.perform(get("/api/foro/publicaciones/1/utiles").principal(AUTH))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.mias[0]").value(7));
+            mvc.perform(post("/api/foro/respuestas/7/util").principal(AUTH))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.utiles").value(3)).andExpect(jsonPath("$.marcada").value(true));
+        }
+
+        @Test
         @DisplayName("Ranking y logros pasan el correo del JWT a sus puertos de entrada")
         void gamificacion() throws Exception {
             RankingUseCase ranking = mock(RankingUseCase.class);
             LogrosUseCase logros = mock(LogrosUseCase.class);
             when(ranking.top("semana")).thenReturn(List.of(new RankingResponse(1L, "Laura", null, 195L, 2)));
-            when(logros.listar(LAURA)).thenReturn(List.of(new LogroResponse("PRIMER_ACIERTO", "Primer paso", "Primera respuesta correcta", "rocket_launch", true, null)));
+            when(logros.listar(LAURA)).thenReturn(List.of(LogroResponse.builder().codigo("PRIMER_ACIERTO").nombre("Primer paso").descripcion("Primera respuesta correcta").icono("rocket_launch").obtenido(true).build()));
 
             mvc(new RankingController(ranking)).perform(get("/api/ranking").param("periodo", "semana"))
                     .andExpect(status().isOk())
@@ -300,6 +326,30 @@ class ControladoresRestTest {
             mvc(new LogrosController(logros)).perform(get("/api/logros").principal(AUTH))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].codigo").value("PRIMER_ACIERTO"));
+        }
+
+        @Test
+        @DisplayName("Mi avance: actividad, análisis y meta usan el correo del JWT; la meta se valida (5 a 300)")
+        void miAvance() throws Exception {
+            MiAvanceUseCase avance = mock(MiAvanceUseCase.class);
+            MetaSemanalResponse meta = new MetaSemanalResponse(30, 12, 9, java.time.LocalDate.of(2026, 11, 2),
+                    java.time.LocalDate.of(2026, 11, 8), 5, false);
+            when(avance.actividad(LAURA, 126)).thenReturn(new ActividadResponse(List.of(), 0, 0, 0, null));
+            when(avance.analisis(LAURA)).thenReturn(new AnalisisResponse(List.of(), List.of(), List.of(), null));
+            when(avance.meta(LAURA)).thenReturn(meta);
+            when(avance.cambiarMeta(LAURA, 30)).thenReturn(meta);
+            MockMvc mvc = mvc(new MiAvanceController(avance));
+
+            mvc.perform(get("/api/practica/actividad").principal(AUTH)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.diasActivos").value(0));
+            mvc.perform(get("/api/practica/analisis").principal(AUTH)).andExpect(status().isOk());
+            mvc.perform(get("/api/practica/meta").principal(AUTH)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.meta").value(30)).andExpect(jsonPath("$.diasRestantes").value(5));
+            mvc.perform(put("/api/practica/meta").principal(AUTH).contentType(MediaType.APPLICATION_JSON).content("{\"meta\":30}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.respondidas").value(12));
+            mvc.perform(put("/api/practica/meta").principal(AUTH).contentType(MediaType.APPLICATION_JSON).content("{\"meta\":2}"))
+                    .andExpect(status().isBadRequest());
+            verify(avance, never()).cambiarMeta(LAURA, 2);
         }
 
         @Test

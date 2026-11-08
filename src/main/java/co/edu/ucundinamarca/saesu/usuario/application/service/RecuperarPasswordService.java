@@ -118,7 +118,7 @@ public class RecuperarPasswordService {
         codigoPort.invalidarActivos(usuario.getId());
 
         try {
-            emailService.enviarAvisoCambioPassword(usuario.getCorreo(), usuario.getNombre());
+            emailService.enviarAvisoCambioPassword(usuario.getCorreo(), usuario.getNombre(), true);
         } catch (Exception e) {
             log.warn("No se pudo enviar el aviso de cambio de contraseña a {}", RequestLoggingFilter.enmascarar(usuario.getCorreo()));
         }

@@ -41,18 +41,18 @@ class GamificacionPuertosTest {
     }
 
     @Test
-    @DisplayName("Logros: busca el id por correo y lista los 11 logros")
+    @DisplayName("Logros: busca el id por correo y lista los 43 logros ganables")
     void logrosPorCorreo() {
         Usuario laura = mock(Usuario.class);
         when(laura.getId()).thenReturn(7L);
         when(usuarios.buscarPorCorreo("laura@ucundinamarca.edu.co")).thenReturn(Optional.of(laura));
         when(logrosPort.obtenidos(7L)).thenReturn(new HashMap<>());
         when(logrosPort.estadisticas(7L)).thenReturn(
-                new LogrosPort.Estadisticas(0, 0, 0, 0, 0, 0, 0, new HashMap<>()));
+                new LogrosPort.Estadisticas(new HashMap<>(), new HashMap<>(), "laura@ucundinamarca.edu.co"));
 
-        LogrosService service = new LogrosService(logrosPort, usuarios);
+        LogrosService service = new LogrosService(logrosPort, usuarios, "");
 
-        assertThat(service.listar("laura@ucundinamarca.edu.co")).hasSize(11);
+        assertThat(service.listar("laura@ucundinamarca.edu.co")).hasSize(43);
         verify(logrosPort).estadisticas(7L);
     }
 
@@ -60,7 +60,7 @@ class GamificacionPuertosTest {
     @DisplayName("Logros: correo que no existe -> UsuarioNoEncontradoException")
     void logrosSinUsuario() {
         when(usuarios.buscarPorCorreo(any())).thenReturn(Optional.empty());
-        LogrosService service = new LogrosService(logrosPort, usuarios);
+        LogrosService service = new LogrosService(logrosPort, usuarios, "");
 
         assertThatThrownBy(() -> service.listar("x@y.co")).isInstanceOf(UsuarioNoEncontradoException.class);
     }

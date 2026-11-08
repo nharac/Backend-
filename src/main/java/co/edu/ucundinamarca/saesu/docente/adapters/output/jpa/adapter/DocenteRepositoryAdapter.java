@@ -89,6 +89,19 @@ public class DocenteRepositoryAdapter implements DocenteRepositoryPort {
     }
 
     @Override
+    @Transactional
+    public boolean eliminarPublicacion(Long publicacionId) {
+        // Las respuestas se borran en cascada (ON DELETE CASCADE, V6)
+        return jdbc.update("DELETE FROM publicaciones WHERE id = ?", publicacionId) > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean eliminarRespuesta(Long respuestaId) {
+        return jdbc.update("DELETE FROM respuestas WHERE id = ?", respuestaId) > 0;
+    }
+
+    @Override
     public List<ContenidoOcultoResponse> listarContenidoOculto() {
         // Solo lo que ocultó un docente (oculta_por no nulo); lo que borró el propio autor no se muestra
         List<ContenidoOcultoResponse> lista = new ArrayList<>(jdbc.query("""

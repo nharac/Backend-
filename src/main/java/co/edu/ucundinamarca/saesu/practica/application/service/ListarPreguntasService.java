@@ -7,6 +7,7 @@ import co.edu.ucundinamarca.saesu.practica.domain.model.Pregunta;
 import co.edu.ucundinamarca.saesu.practica.ports.input.ListarPreguntasUseCase;
 import co.edu.ucundinamarca.saesu.practica.ports.output.OpcionRepositoryPort;
 import co.edu.ucundinamarca.saesu.practica.ports.output.PreguntaRepositoryPort;
+import co.edu.ucundinamarca.saesu.practica.ports.output.UsuarioConsultaPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,16 +26,26 @@ public class ListarPreguntasService implements ListarPreguntasUseCase {
 
     private final PreguntaRepositoryPort preguntaRepository;
     private final OpcionRepositoryPort opcionRepository;
+    private final UsuarioConsultaPort usuarioConsulta;
+
+    /** Máximo de preguntas por sesión (evita pedir el banco entero de una vez). */
+    static final int MAX_SESION = 50;
 
     @Override
     @Cacheable(value = "preguntas", key = "#tema + '-' + #dificultad + '-' + #page + '-' + #size")
     public List<PreguntaResponse> listar(String tema, String dificultad, int page, int size) {
-       
-    
-        
         List<Pregunta> preguntas = preguntaRepository.listar(tema, dificultad, page, size);
 
         return preguntas.stream()
+                .map(this::convertirADto)
+                .toList();
+    }
+
+    @Override
+    public List<PreguntaResponse> sesion(String tema, String dificultad, int size, String correo) {
+        int cuantas = Math.max(1, Math.min(size, MAX_SESION));
+        Long usuarioId = usuarioConsulta.obtenerIdPorCorreo(correo);
+        return preguntaRepository.paraSesion(tema, dificultad, usuarioId, cuantas).stream()
                 .map(this::convertirADto)
                 .toList();
     }

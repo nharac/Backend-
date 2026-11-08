@@ -25,7 +25,7 @@ public class LogrosController {
     }
 
     @Operation(summary = "Mis logros",
-            description = "Devuelve los 11 logros con su estado (obtenido y fecha). Evalúa primero si se desbloqueó alguno nuevo. Requiere JWT.")
+            description = "Devuelve los 40 logros con su estado, categoría, rareza y avance hacia la meta. Evalúa primero si se desbloqueó alguno nuevo. Requiere JWT.")
     @GetMapping
     public ResponseEntity<List<LogroResponse>> misLogros(Authentication authentication) {
         return ResponseEntity.ok(logros.listar(authentication.getName()));

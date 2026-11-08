@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc;
 
+import co.edu.ucundinamarca.saesu.gamificacion.domain.model.Cifra;
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.LogrosPort.Estadisticas;
 import co.edu.ucundinamarca.saesu.testutil.JdbcFalso;
 import org.junit.jupiter.api.Test;
@@ -18,16 +19,25 @@ class LogrosJdbcRepositoryTest {
         JdbcFalso jdbc = new JdbcFalso()
                 .filas("GROUP BY p.tema", List.of(fila("tema", "limites", "total", 10L, "resueltas", 4L),
                         fila("tema", "derivadas", "total", 8L, "resueltas", 8L)))
-                .filas("AS aciertos", List.of(fila("aciertos", 30L, "primera", 12L, "racha", 5L, "publicaciones", 2L,
-                        "respuestas_foro", 7L, "oficiales", 1L, "puntos", 640L)));
+                .filas("AS respondidas", List.of(fila("respondidas", 40L, "aciertos", 30L, "primera", 12L,
+                        "avanzadas", 4L, "total_avanzadas", 40L, "max_aciertos_dia", 9L, "max_seguidas", 6L, "nocturnas", 2L,
+                        "madrugadas", 0L, "racha", 5L, "quices", 3L, "quices_perfectos", 1L, "publicaciones", 2L,
+                        "respuestas_foro", 7L, "oficiales", 1L, "mensajes_tutor", 15L, "puntos", 640L, "correo", "ana@ucundinamarca.edu.co")));
 
         Estadisticas e = new LogrosJdbcRepository(jdbc).estadisticas(3L);
 
-        assertThat(e.aciertos()).isEqualTo(30L);
-        assertThat(e.respuestasOficiales()).isEqualTo(1L);
-        assertThat(e.puntos()).isEqualTo(640L);
+        assertThat(e.get(Cifra.ACIERTOS)).isEqualTo(30L);
+        assertThat(e.get(Cifra.OFICIALES)).isEqualTo(1L);
+        assertThat(e.get(Cifra.PUNTOS)).isEqualTo(640L);
+        assertThat(e.get(Cifra.MAX_SEGUIDAS)).isEqualTo(6L);
+        assertThat(e.get(Cifra.MENSAJES_TUTOR)).isEqualTo(15L);
+        assertThat(e.get(Cifra.TOTAL_AVANZADAS)).isEqualTo(40L);
+        assertThat(e.correo()).isEqualTo("ana@ucundinamarca.edu.co");
+        assertThat(e.get(Cifra.LOGROS)).as("las derivadas no salen del SQL").isZero();
+        assertThat(e.cifras()).hasSize(LogrosJdbcRepository.CIFRAS_SQL.size());
         assertThat(e.temas().get("derivadas")).containsExactly(8L, 8L);
-        assertThat(jdbc.consultas.get(1).args()).hasSize(7).containsOnly(3L);
+        assertThat(e.preguntasDelTema("integrales")).isZero();
+        assertThat(jdbc.consultas.get(1).args()).as("el id entra una sola vez").containsExactly(3L);
     }
 
     @Test

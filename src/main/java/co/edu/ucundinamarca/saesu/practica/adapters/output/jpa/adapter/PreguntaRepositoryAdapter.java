@@ -40,6 +40,13 @@ public class PreguntaRepositoryAdapter implements PreguntaRepositoryPort {
     }
 
     @Override
+    public List<Pregunta> paraSesion(String tema, String dificultad, Long usuarioId, int size) {
+        return jpaRepository.paraSesion(tema, dificultad, usuarioId, size).stream()
+                .map(mapper::toDominio)
+                .toList();
+    }
+
+    @Override
     public Optional<Pregunta> buscarPorId(Long id) {
         return jpaRepository.findById(id).map(mapper::toDominio);
     }

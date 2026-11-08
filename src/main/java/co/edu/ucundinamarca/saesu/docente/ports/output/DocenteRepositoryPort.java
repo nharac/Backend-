@@ -14,5 +14,9 @@ public interface DocenteRepositoryPort {
     boolean restaurarRespuesta(Long respuestaId);
     boolean ocultarPublicacion(Long publicacionId, Long docenteId);
     boolean restaurarPublicacion(Long publicacionId);
+    /** Borra la publicación de verdad (con sus respuestas, en cascada). */
+    boolean eliminarPublicacion(Long publicacionId);
+    /** Borra la respuesta de verdad (con sus respuestas hijas, en cascada). */
+    boolean eliminarRespuesta(Long respuestaId);
     List<ContenidoOcultoResponse> listarContenidoOculto();
 }

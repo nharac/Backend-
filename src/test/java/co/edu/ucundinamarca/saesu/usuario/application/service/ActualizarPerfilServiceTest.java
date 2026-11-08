@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.usuario.application.service;
 
+import co.edu.ucundinamarca.saesu.core.notificacion.EmailService;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.ActualizarPerfilRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.UsuarioResponse;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.ContrasenaIncorrectaException;
@@ -17,6 +18,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,13 +33,15 @@ class ActualizarPerfilServiceTest {
 
     private final PasswordEncoder encoder = new BCryptPasswordEncoder(4); // costo bajo = prueba rápida
     private UsuarioRepositoryPort repo;
+    private EmailService email;
     private ActualizarPerfilService servicio;
     private Usuario usuario;
 
     @BeforeEach
     void preparar() {
         repo = mock(UsuarioRepositoryPort.class);
-        servicio = new ActualizarPerfilService(repo, encoder);
+        email = mock(EmailService.class);
+        servicio = new ActualizarPerfilService(repo, encoder, email);
         usuario = new Usuario(5L, "Juan", CORREO, encoder.encode(CLAVE), "ESTUDIANTE", LocalDateTime.now(), null);
         when(repo.buscarPorCorreo(CORREO)).thenReturn(Optional.of(usuario));
         when(repo.guardar(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -59,6 +64,7 @@ class ActualizarPerfilServiceTest {
 
         assertThat(r.getNombre()).isEqualTo("Juan Lozano");
         assertThat(usuario.getPassword()).isEqualTo(hashAntes);
+        verify(email, never()).enviarAvisoCambioPassword(any(), any(), anyBoolean());
     }
 
     @Test
@@ -68,6 +74,18 @@ class ActualizarPerfilServiceTest {
 
         assertThat(encoder.matches("NuevaClave1!", usuario.getPassword())).isTrue();
         assertThat(usuario.getPassword()).doesNotContain("NuevaClave1!");
+        // Aviso de seguridad: cambio desde el perfil (no con código de recuperación)
+        verify(email).enviarAvisoCambioPassword(CORREO, "Juan", false);
+    }
+
+    @Test
+    @DisplayName("Si el correo de aviso falla, el cambio de contraseña igual queda hecho")
+    void correoFalla() {
+        doThrow(new IllegalStateException("SMTP caído")).when(email).enviarAvisoCambioPassword(any(), any(), anyBoolean());
+
+        servicio.actualizarPerfil(CORREO, pedido("Juan", CLAVE, "NuevaClave1!"));
+
+        assertThat(encoder.matches("NuevaClave1!", usuario.getPassword())).isTrue();
     }
 
     @Test

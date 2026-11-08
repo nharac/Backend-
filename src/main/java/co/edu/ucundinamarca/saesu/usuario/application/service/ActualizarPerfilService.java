@@ -1,5 +1,9 @@
 package co.edu.ucundinamarca.saesu.usuario.application.service;
 
+import co.edu.ucundinamarca.saesu.core.logging.RequestLoggingFilter;
+import co.edu.ucundinamarca.saesu.core.notificacion.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.request.ActualizarPerfilRequest;
 import co.edu.ucundinamarca.saesu.usuario.application.dto.response.UsuarioResponse;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.ContrasenaIncorrectaException;
@@ -12,18 +16,24 @@ import org.springframework.stereotype.Service;
 
 /**
  * Caso de uso: el usuario autenticado actualiza su nombre y, si lo pide,
- * su contraseña (verificando primero la contraseña actual).
+ * su contraseña (verificando primero la contraseña actual). Si cambia la contraseña,
+ * se le envía un aviso de seguridad por correo.
  */
 @Service
 public class ActualizarPerfilService implements ActualizarPerfilUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(ActualizarPerfilService.class);
+
     private final UsuarioRepositoryPort usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     public ActualizarPerfilService(UsuarioRepositoryPort usuarioRepository,
-                                   PasswordEncoder passwordEncoder) {
+                                   PasswordEncoder passwordEncoder,
+                                   EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @Override
@@ -51,6 +61,16 @@ public class ActualizarPerfilService implements ActualizarPerfilUseCase {
         }
 
         Usuario guardado = usuarioRepository.guardar(usuario);
+
+        // 3. Aviso de seguridad por correo si cambió la contraseña (si el correo falla, el cambio ya quedó hecho)
+        if (nueva != null && !nueva.isBlank()) {
+            try {
+                emailService.enviarAvisoCambioPassword(guardado.getCorreo(), guardado.getNombre(), false);
+            } catch (Exception e) {
+                log.warn("No se pudo enviar el aviso de cambio de contraseña a {}",
+                        RequestLoggingFilter.enmascarar(guardado.getCorreo()));
+            }
+        }
 
         return new UsuarioResponse(
                 guardado.getId(),

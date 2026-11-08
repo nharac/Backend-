@@ -123,7 +123,7 @@ class RecuperarPasswordServiceTest {
         assertThat(encoder.matches("NuevaClave#2026", nuevaHash.getValue())).isTrue();
         verify(codigoPort).marcarUsado(30L);
         verify(codigoPort).invalidarActivos(7L);
-        verify(emailService).enviarAvisoCambioPassword(CORREO, "Laura Gómez");
+        verify(emailService).enviarAvisoCambioPassword(CORREO, "Laura Gómez", true);
     }
 
     @Test

@@ -106,6 +106,8 @@ public class EnviarMensajeChatService implements EnviarMensajeChatUseCase {
                     historialFormateado,
                     request.getMensaje()
             );
+        } catch (IaNoDisponibleException e) {
+            throw e; // ya trae un mensaje claro (saturado, tardó demasiado...)
         } catch (Exception e) {
             throw new IaNoDisponibleException(
                     "No se pudo contactar al tutor IA. Intenta de nuevo en unos segundos.",

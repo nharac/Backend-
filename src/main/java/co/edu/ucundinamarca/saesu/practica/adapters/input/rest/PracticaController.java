@@ -60,6 +60,21 @@ public class PracticaController {
     }
 
     @Operation(
+            summary = "Preguntas para una sesión de práctica",
+            description = "Preguntas al azar del tema, distintas cada día: primero las que el estudiante no ha visto hoy "
+                    + "y luego las que todavía no ha resuelto. Requiere JWT."
+    )
+    @GetMapping("/preguntas/sesion")
+    public ResponseEntity<List<PreguntaResponse>> sesion(
+            @RequestParam(required = false) String tema,
+            @RequestParam(required = false) String dificultad,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(listarPreguntasUseCase.sesion(tema, dificultad, size, authentication.getName()));
+    }
+
+    @Operation(
             summary = "Responder pregunta",
             description = "Valida la opción seleccionada. Si acierta, habilita 'Siguiente'. Si falla, devuelve pista y activa chat IA. Requiere JWT."
     )

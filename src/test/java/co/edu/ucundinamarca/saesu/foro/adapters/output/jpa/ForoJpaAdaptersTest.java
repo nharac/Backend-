@@ -131,6 +131,7 @@ class ForoJpaAdaptersTest {
     void respuestasListarBuscarContarYGuardar() {
         RespuestaEntity r = new RespuestaEntity(8L, 1L, usuario(4L), null, "Usa la regla de la cadena", true,
                 LocalDateTime.now(), null);
+        r.setImagenUrl("https://s3/r.png");
         when(respuestas.listarPorPublicacion(1L)).thenReturn(List.of(r));
         when(respuestas.findById(8L)).thenReturn(Optional.of(r));
         when(respuestas.countByPublicacionId(1L)).thenReturn(3L);
@@ -142,6 +143,7 @@ class ForoJpaAdaptersTest {
                     assertThat(x.getEsOficial()).isTrue();
                     assertThat(x.isOculta()).isFalse();
                     assertThat(x.getAutorId()).isEqualTo(4L);
+                    assertThat(x.getImagenUrl()).isEqualTo("https://s3/r.png");
                 });
         assertThat(respuestaAdapter.buscarPorId(8L)).isPresent();
         assertThat(respuestaAdapter.contarPorPublicacion(1L)).isEqualTo(3L);

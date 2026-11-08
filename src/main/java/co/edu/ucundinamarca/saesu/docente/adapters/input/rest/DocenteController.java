@@ -85,4 +85,18 @@ public class DocenteController {
         moderacionService.restaurarPublicacion(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Eliminar para siempre una publicación (con sus respuestas)")
+    @DeleteMapping("/publicaciones/{id}")
+    public ResponseEntity<Void> eliminarPublicacion(@PathVariable Long id) {
+        moderacionService.eliminarPublicacion(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Eliminar para siempre una respuesta (con las que le respondieron)")
+    @DeleteMapping("/respuestas/{id}")
+    public ResponseEntity<Void> eliminarRespuesta(@PathVariable Long id) {
+        moderacionService.eliminarRespuesta(id);
+        return ResponseEntity.noContent().build();
+    }
 }

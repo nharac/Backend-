@@ -104,6 +104,10 @@ class ControladoresDocenteTest {
         verify(moderacion).ocultarPublicacion(10L, PROFE);
         mvc.perform(delete("/api/docente/publicaciones/10/ocultar")).andExpect(status().isNoContent());
         verify(moderacion).restaurarPublicacion(10L);
+        mvc.perform(delete("/api/docente/publicaciones/10")).andExpect(status().isNoContent());
+        verify(moderacion).eliminarPublicacion(10L);
+        mvc.perform(delete("/api/docente/respuestas/51")).andExpect(status().isNoContent());
+        verify(moderacion).eliminarRespuesta(51L);
     }
 
     @Test

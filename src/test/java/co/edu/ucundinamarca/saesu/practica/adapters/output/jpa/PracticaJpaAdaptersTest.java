@@ -104,6 +104,9 @@ class PracticaJpaAdaptersTest {
         });
         assertThat(adapter.contar("derivadas", null)).isEqualTo(1L);
         assertThat(adapter.buscarPorId(7L)).isPresent();
+        when(repo.paraSesion("derivadas", null, 4L, 10)).thenReturn(List.of(e));
+        assertThat(adapter.paraSesion("derivadas", null, 4L, 10)).singleElement()
+                .extracting(Pregunta::getId).isEqualTo(7L);
 
         Pregunta sinFecha = new Pregunta(null, Tema.LIMITES, "lim", Dificultad.BASICO, null, null, null);
         assertThat(adapter.guardar(sinFecha).getFechaCreacion()).isNotNull();

@@ -103,7 +103,7 @@ class PublicarResponderEliminarTest {
 
     @Nested
     class Responder {
-        private ResponderPublicacionService service() { return new ResponderPublicacionService(publicaciones, respuestas, usuarios, email, puntos); }
+        private ResponderPublicacionService service() { return new ResponderPublicacionService(publicaciones, respuestas, usuarios, email, puntos, storage); }
 
         @Test
         @DisplayName("Responde, avisa por correo al autor de la publicación y da puntos")
@@ -122,6 +122,25 @@ class PublicarResponderEliminarTest {
             assertThat(r.isEsOficial()).isFalse();
             verify(email).enviarCorreoNuevaRespuesta(camila.getCorreo(), "Camila Torres", "¿Cómo derivo x²?");
             verify(puntos).otorgarPuntosForo(1L, 2L);
+        }
+
+        @Test
+        @DisplayName("Responde con una imagen de nuestro bucket; una URL ajena se rechaza")
+        void respondeConImagen() {
+            when(publicaciones.buscarPorId(10L)).thenReturn(Optional.of(publicacion(10L, 1L)));
+            when(usuarios.buscarPorCorreo(anyString())).thenReturn(Optional.of(usuario(1L, "Laura", "ESTUDIANTE")));
+            when(respuestas.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+            String propia = "https://saesu.s3.us-east-1.amazonaws.com/foro/a.png";
+            when(storage.esUrlPropia(propia)).thenReturn(true);
+            when(storage.esUrlPropia("https://otro.com/x.png")).thenReturn(false);
+
+            RespuestaResponse r = service().responder(10L, new ResponderPublicacionRequest("Mira mi procedimiento", null, " " + propia + " "),
+                    "laura@ucundinamarca.edu.co");
+            assertThat(r.getImagenUrl()).isEqualTo(propia);
+            assertThat(service().responder(10L, new ResponderPublicacionRequest("Sin foto", null, "  "), "laura@ucundinamarca.edu.co")
+                    .getImagenUrl()).isNull();
+            assertThatThrownBy(() -> service().responder(10L, new ResponderPublicacionRequest("x", null, "https://otro.com/x.png"),
+                    "laura@ucundinamarca.edu.co")).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test

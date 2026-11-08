@@ -162,8 +162,8 @@ class ValidarRespuestaServiceTest {
     @Test
     @DisplayName("Al acertar se devuelven los logros recién desbloqueados")
     void devuelveLogrosNuevos() {
-        LogroResponse logro = new LogroResponse("PRIMER_ACIERTO", "Primer paso", "Primera respuesta correcta",
-                "rocket_launch", true, null);
+        LogroResponse logro = LogroResponse.builder().codigo("PRIMER_ACIERTO").nombre("Primer paso")
+                .descripcion("Primera respuesta correcta").icono("rocket_launch").obtenido(true).build();
         when(logrosService.evaluar(USUARIO)).thenReturn(List.of(logro));
 
         ValidacionResponse r = servicio.validar(PREGUNTA, CORRECTA, CORREO);

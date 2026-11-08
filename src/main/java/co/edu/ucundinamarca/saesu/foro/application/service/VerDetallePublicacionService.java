@@ -80,7 +80,8 @@ public class VerDetallePublicacionService implements VerDetallePublicacionUseCas
                                 !r.isOculta() && Boolean.TRUE.equals(r.getEsOficial()),
                                 r.getFechaCreacion(),
                                 new ArrayList<>(),
-                                r.isOculta()
+                                r.isOculta(),
+                                r.isOculta() ? null : r.getImagenUrl()
                         )
                 ));
 

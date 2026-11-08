@@ -34,6 +34,10 @@ class DocenteRepositoryAdapterTest {
         jdbc.filasAfectadas = 0;
         assertThat(adapter.restaurarRespuesta(8L)).isFalse();
         assertThat(adapter.restaurarPublicacion(1L)).isFalse();
+        assertThat(adapter.eliminarPublicacion(1L)).isFalse();
+        jdbc.filasAfectadas = 1;
+        assertThat(adapter.eliminarPublicacion(1L)).isTrue();
+        assertThat(adapter.eliminarRespuesta(8L)).isTrue();
     }
 
     @Test

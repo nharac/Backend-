@@ -51,6 +51,22 @@ class ModeracionForoServiceTest {
     }
 
     @Test
+    @DisplayName("Eliminar para siempre publicaciones y respuestas; si no existen: 404")
+    void eliminar() {
+        when(docenteRepository.eliminarPublicacion(5L)).thenReturn(true);
+        when(docenteRepository.eliminarRespuesta(8L)).thenReturn(true);
+        servicio.eliminarPublicacion(5L);
+        servicio.eliminarRespuesta(8L);
+        verify(docenteRepository).eliminarPublicacion(5L);
+        verify(docenteRepository).eliminarRespuesta(8L);
+
+        when(docenteRepository.eliminarPublicacion(6L)).thenReturn(false);
+        when(docenteRepository.eliminarRespuesta(9L)).thenReturn(false);
+        assertThatThrownBy(() -> servicio.eliminarPublicacion(6L)).isInstanceOf(PublicacionNoEncontradaException.class);
+        assertThatThrownBy(() -> servicio.eliminarRespuesta(9L)).isInstanceOf(RespuestaNoEncontradaException.class);
+    }
+
+    @Test
     @DisplayName("Restaurar una publicación que no existe: 404")
     void restaurarPublicacionNoExiste() {
         when(docenteRepository.restaurarPublicacion(5L)).thenReturn(false);

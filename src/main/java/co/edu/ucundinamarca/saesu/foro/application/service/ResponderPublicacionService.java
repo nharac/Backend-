@@ -15,6 +15,7 @@ import co.edu.ucundinamarca.saesu.foro.ports.output.RespuestaRepositoryPort;
 import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService;
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
+import co.edu.ucundinamarca.saesu.core.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
     private final UsuarioRepositoryPort usuarioRepository;
     private final EmailService emailService; // emails
     private final PuntosService puntosService; // servicio de puntos
+    private final StorageService storageService; // valida que la imagen sea de nuestro bucket
 
     @Override
     @Transactional
@@ -69,6 +71,13 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
         Usuario autor = usuarioRepository.buscarPorCorreo(correoAutor)
                 .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
 
+        // La imagen (opcional) debe haberse subido antes a POST /api/foro/imagenes
+        String imagenUrl = request.getImagenUrl() == null || request.getImagenUrl().isBlank()
+                ? null : request.getImagenUrl().trim();
+        if (imagenUrl != null && !storageService.esUrlPropia(imagenUrl)) {
+            throw new IllegalArgumentException("La imagen debe subirse primero con POST /api/foro/imagenes");
+        }
+
         // Crear respuesta
         Respuesta respuesta = new Respuesta(
                 null,
@@ -77,7 +86,9 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
                 request.getRespuestaPadreId(),
                 request.getContenido().trim(),
                 false,
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                false,
+                imagenUrl
         );
 
         Respuesta guardada = respuestaRepository.guardar(respuesta);
@@ -115,7 +126,9 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
                 guardada.getContenido(),
                 Boolean.TRUE.equals(guardada.getEsOficial()),
                 guardada.getFechaCreacion(),
-                Collections.emptyList()
+                Collections.emptyList(),
+                false,
+                guardada.getImagenUrl()
         );
     }
 

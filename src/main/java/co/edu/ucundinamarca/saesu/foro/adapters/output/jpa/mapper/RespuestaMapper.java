@@ -19,7 +19,8 @@ public class RespuestaMapper {
                 entity.getContenido(),
                 entity.getEsOficial(),
                 entity.getFechaCreacion(),
-                Boolean.TRUE.equals(entity.getOculta())
+                Boolean.TRUE.equals(entity.getOculta()),
+                entity.getImagenUrl()
         );
     }
 
@@ -31,6 +32,7 @@ public class RespuestaMapper {
         entity.setContenido(dominio.getContenido());
         entity.setEsOficial(dominio.getEsOficial());
         entity.setFechaCreacion(dominio.getFechaCreacion());
+        entity.setImagenUrl(dominio.getImagenUrl());
         return entity;
     }
 }

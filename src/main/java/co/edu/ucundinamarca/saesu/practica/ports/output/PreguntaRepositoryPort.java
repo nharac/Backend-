@@ -22,6 +22,12 @@ public interface PreguntaRepositoryPort {
     long contar(String tema, String dificultad);
 
     /**
+     * Preguntas al azar para una sesión de práctica: primero las que el usuario no ha visto hoy
+     * y las que aún no ha resuelto, así cambian de un día a otro.
+     */
+    List<Pregunta> paraSesion(String tema, String dificultad, Long usuarioId, int size);
+
+    /**
      * Busca una pregunta por su ID.
      */
     Optional<Pregunta> buscarPorId(Long id);

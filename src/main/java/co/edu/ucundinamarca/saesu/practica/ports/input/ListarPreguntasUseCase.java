@@ -25,4 +25,10 @@ public interface ListarPreguntasUseCase {
      * Útil para paginación.
      */
     long contar(String tema, String dificultad);
+
+    /**
+     * Preguntas al azar para una sesión de práctica del estudiante (distintas cada día).
+     * Primero las que no ha visto hoy, luego las que no ha resuelto. No usa caché.
+     */
+    List<PreguntaResponse> sesion(String tema, String dificultad, int size, String correo);
 }

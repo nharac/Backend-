@@ -54,4 +54,13 @@ public class RespuestaEntity {
     /** Oculta por un docente (V14). Solo lectura aquí: se cambia con SQL desde el módulo docente. */
     @Column(name = "oculta", insertable = false, updatable = false)
     private Boolean oculta;
+
+    /** Imagen opcional de la respuesta (V24). */
+    @Column(name = "imagen_url", length = 500)
+    private String imagenUrl;
+
+    public RespuestaEntity(Long id, Long publicacionId, UsuarioEntity autor, Long respuestaPadreId, String contenido,
+                           Boolean esOficial, LocalDateTime fechaCreacion, Boolean oculta) {
+        this(id, publicacionId, autor, respuestaPadreId, contenido, esOficial, fechaCreacion, oculta, null);
+    }
 }

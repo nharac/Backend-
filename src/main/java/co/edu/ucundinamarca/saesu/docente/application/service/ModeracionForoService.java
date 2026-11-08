@@ -14,7 +14,8 @@ import java.util.List;
 
 /**
  * Moderación del foro por parte del docente.
- * Nada se borra: lo oculto deja de verse en el foro y se puede restaurar desde el panel de moderación.
+ * Ocultar no borra nada: deja de verse en el foro y se puede restaurar desde el panel de moderación.
+ * Desde ese panel el docente también puede eliminar el contenido para siempre.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,6 +49,22 @@ public class ModeracionForoService {
     public void restaurarPublicacion(Long publicacionId) {
         if (!docenteRepository.restaurarPublicacion(publicacionId)) {
             throw new PublicacionNoEncontradaException("Publicación no encontrada con id: " + publicacionId);
+        }
+    }
+
+    /** Elimina para siempre una publicación (y sus respuestas). No se puede deshacer. */
+    @Transactional
+    public void eliminarPublicacion(Long publicacionId) {
+        if (!docenteRepository.eliminarPublicacion(publicacionId)) {
+            throw new PublicacionNoEncontradaException("Publicación no encontrada con id: " + publicacionId);
+        }
+    }
+
+    /** Elimina para siempre una respuesta (y las que le respondieron). No se puede deshacer. */
+    @Transactional
+    public void eliminarRespuesta(Long respuestaId) {
+        if (!docenteRepository.eliminarRespuesta(respuestaId)) {
+            throw new RespuestaNoEncontradaException("Respuesta no encontrada con id: " + respuestaId);
         }
     }
 

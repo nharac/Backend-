@@ -145,4 +145,17 @@ class EnviarMensajeChatServiceTest {
                 .isInstanceOf(IaNoDisponibleException.class)
                 .hasMessageContaining("tutor IA");
     }
+
+    @Test
+    @DisplayName("Si la IA ya explica qué pasó (por ejemplo, que tardó demasiado), se conserva ese mensaje")
+    void conservaElMensajeDeLaIa() {
+        when(chat.contarMensajesHoy(eq(1L), any())).thenReturn(0L);
+        when(chat.listarHistorialLibre(1L, 20)).thenReturn(List.of());
+        when(ia.generarRespuesta(anyString(), anyString(), anyString()))
+                .thenThrow(new IaNoDisponibleException("El tutor se tardó demasiado en responder."));
+
+        assertThatThrownBy(() -> service.enviarMensaje(new EnviarMensajeRequest(null, "Hola"), CORREO))
+                .isInstanceOf(IaNoDisponibleException.class)
+                .hasMessageContaining("tardó demasiado");
+    }
 }

@@ -82,7 +82,7 @@ class ConsultasForoTest {
         Publicacion p = new Publicacion(10L, 1L, "¿Cómo derivo x²?", "No entiendo", "derivadas", HACE_UN_RATO, HACE_UN_RATO, true, "https://s3/a.png");
         Respuesta directa = new Respuesta(50L, 10L, 2L, null, "Usa la regla de la potencia", true, HACE_UN_RATO);
         Respuesta hija = new Respuesta(51L, 10L, 1L, 50L, "¡Gracias!", false, HACE_UN_RATO);
-        Respuesta oculta = new Respuesta(52L, 10L, 3L, null, "spam", true, HACE_UN_RATO, true);
+        Respuesta oculta = new Respuesta(52L, 10L, 3L, null, "spam", true, HACE_UN_RATO, true, "https://s3/spam.png");
         Respuesta huerfana = new Respuesta(53L, 10L, 2L, 999L, "Padre borrado", false, HACE_UN_RATO);
         when(publicaciones.buscarPorId(10L)).thenReturn(Optional.of(p));
         when(respuestas.listarPorPublicacion(10L)).thenReturn(List.of(directa, hija, oculta, huerfana));
@@ -101,6 +101,7 @@ class ConsultasForoTest {
         assertThat(moderada.isOculta()).isTrue();
         assertThat(moderada.getContenido()).isEqualTo(VerDetallePublicacionService.CONTENIDO_OCULTO);
         assertThat(moderada.isEsOficial()).as("una respuesta oculta no se muestra como oficial").isFalse();
+        assertThat(moderada.getImagenUrl()).as("tampoco se envía su imagen").isNull();
     }
 
     @Test

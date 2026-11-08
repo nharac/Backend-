@@ -109,6 +109,23 @@ class GeminiAdapterTest {
     }
 
     @Test
+    void siGeminiSeTardaDemasiadoNoReintentaYAvisa() {
+        WebClient.Builder lento = WebClient.builder().exchangeFunction(req -> {
+            peticiones.add(req);
+            return Mono.never();
+        });
+        GeminiAdapter a = new GeminiAdapter(lento, new ObjectMapper());
+        ReflectionTestUtils.setField(a, "apiKey", "clave-prueba");
+        ReflectionTestUtils.setField(a, "modelo", "gemini-test");
+        ReflectionTestUtils.setField(a, "baseUrl", "https://gemini.test/v1beta/models");
+        ReflectionTestUtils.setField(a, "timeoutSegundos", 1L);
+
+        assertThatThrownBy(() -> a.generarRespuesta("s", "", "m"))
+                .isInstanceOf(IaNoDisponibleException.class).hasMessageContaining("tardó demasiado");
+        assertThat(peticiones).hasSize(1);
+    }
+
+    @Test
     void sinConexionSeRindeDespuesDeTresIntentos() {
         GeminiAdapter a = adapter();
         assertThatThrownBy(() -> a.generarRespuesta("s", "", "m"))
