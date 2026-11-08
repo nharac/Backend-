@@ -86,6 +86,12 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, mensaje, req.getRequestURI());
     }
 
+    /** Compra del vestidor de Sumi que no se puede hacer (ya la tiene o no le alcanzan las monedas). */
+    @ExceptionHandler(co.edu.ucundinamarca.saesu.gamificacion.domain.exception.CompraNoValidaException.class)
+    public ResponseEntity<ErrorResponse> handleCompraNoValida(RuntimeException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), req.getRequestURI());
+    }
+
     /** Datos inválidos (ej. imagen que no es JPG/PNG o URL de imagen ajena). */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleArgumentoInvalido(IllegalArgumentException ex, HttpServletRequest req) {

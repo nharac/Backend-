@@ -2,6 +2,7 @@ package co.edu.ucundinamarca.saesu.gamificacion.application.service;
 
 import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jpa.entity.PuntoHistorialEntity;
 import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jpa.repository.PuntoHistorialJpaRepository;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.output.MonedasPort;
 import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.entity.UsuarioEntity;
 import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.repository.UsuarioJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /** Puntos, racha diaria y reglas anti-abuso del foro. */
@@ -37,6 +39,7 @@ class PuntosServiceTest {
 
     @Mock private PuntoHistorialJpaRepository puntosRepository;
     @Mock private UsuarioJpaRepository usuarioRepository;
+    @Mock private MonedasPort monedas;
 
     @InjectMocks private PuntosService servicio;
 
@@ -67,6 +70,15 @@ class PuntosServiceTest {
         assertThat(usuario.getRachaActual()).isEqualTo(1);
         assertThat(usuario.getUltimaFechaPractica()).isEqualTo(LocalDate.now());
         assertThat(historialGuardado(1)).extracting(PuntoHistorialEntity::getCantidad).containsExactly(20);
+        verify(monedas).sumar(USUARIO, 4, "Acierto");
+    }
+
+    @Test
+    @DisplayName("Pocos puntos igual dan al menos 1 Sumi Moneda")
+    void minimoUnaMoneda() {
+        servicio.otorgarPuntos(USUARIO, 3, "Algo pequeño");
+
+        verify(monedas).sumar(USUARIO, 1, "Algo pequeño");
     }
 
     @Test
@@ -79,6 +91,20 @@ class PuntosServiceTest {
 
         assertThat(usuario.getRachaActual()).isEqualTo(4);
         assertThat(historialGuardado(2)).extracting(PuntoHistorialEntity::getCantidad).containsExactly(20, 5);
+        verify(monedas).sumar(USUARIO, PuntosService.MONEDAS_RACHA, "Racha diaria");
+        verify(monedas, never()).sumar(eq(USUARIO), eq(PuntosService.MONEDAS_SEMANA_RACHA), anyString());
+    }
+
+    @Test
+    @DisplayName("Cada 7 días seguidos de racha da 15 Sumi Monedas extra")
+    void semanaDeRacha() {
+        usuario.setRachaActual(6);
+        usuario.setUltimaFechaPractica(LocalDate.now().minusDays(1));
+
+        servicio.otorgarPuntos(USUARIO, 20, "Acierto");
+
+        assertThat(usuario.getRachaActual()).isEqualTo(7);
+        verify(monedas).sumar(USUARIO, PuntosService.MONEDAS_SEMANA_RACHA, "¡Racha de 7 días!");
     }
 
     @Test
@@ -129,6 +155,7 @@ class PuntosServiceTest {
 
         assertThat(dio).isTrue();
         assertThat(historialGuardado(1).get(0).getCantidad()).isEqualTo(10);
+        verify(monedas).sumar(USUARIO, PuntosService.MONEDAS_FORO, PuntosService.MOTIVO_FORO);
     }
 
     @Test
@@ -138,6 +165,7 @@ class PuntosServiceTest {
 
         assertThat(dio).isFalse();
         verify(puntosRepository, never()).save(any());
+        verifyNoInteractions(monedas);
     }
 
     @Test
@@ -155,14 +183,15 @@ class PuntosServiceTest {
     // ---------- Premios únicos ----------
 
     @Test
-    @DisplayName("Un premio único no se repite (ej. respuesta oficial marcada dos veces)")
+    @DisplayName("La respuesta oficial premia una sola vez (aunque se marque dos veces)")
     void premioUnico() {
         when(puntosRepository.existePorMotivo(USUARIO, "Respuesta oficial #7")).thenReturn(false, true);
 
-        servicio.otorgarPuntosUnaVez(USUARIO, 15, "Respuesta oficial #7");
-        servicio.otorgarPuntosUnaVez(USUARIO, 15, "Respuesta oficial #7");
+        servicio.otorgarRespuestaOficial(USUARIO, 7L);
+        servicio.otorgarRespuestaOficial(USUARIO, 7L);
 
-        assertThat(historialGuardado(1).get(0).getCantidad()).isEqualTo(15);
+        assertThat(historialGuardado(1).get(0).getCantidad()).isEqualTo(PuntosService.PUNTOS_RESPUESTA_OFICIAL);
+        verify(monedas, times(1)).sumar(USUARIO, PuntosService.MONEDAS_RESPUESTA_OFICIAL, "Respuesta oficial #7");
         verify(puntosRepository, times(2)).existePorMotivo(anyLong(), anyString());
     }
 }

@@ -27,7 +27,6 @@ public class GestionDocenteService implements GestionDocenteUseCase {
     private final PuntosService puntosService;
 
     /** Puntos para el estudiante cuando un docente marca su respuesta como oficial. */
-    private static final int PUNTOS_RESPUESTA_OFICIAL = 15;
 
     /** Pendientes del docente: una sola consulta (antes eran ~4 por cada publicación del foro). */
     @Override
@@ -55,8 +54,7 @@ public class GestionDocenteService implements GestionDocenteUseCase {
         // Premio al estudiante autor (una sola vez por respuesta, aunque se marque y desmarque)
         usuarioRepository.buscarPorId(respuesta.getAutorId())
                 .filter(autor -> "ESTUDIANTE".equalsIgnoreCase(String.valueOf(autor.getRol()).replace("ROLE_", "")))
-                .ifPresent(autor -> puntosService.otorgarPuntosUnaVez(
-                        autor.getId(), PUNTOS_RESPUESTA_OFICIAL, "Respuesta oficial #" + respuestaId));
+                .ifPresent(autor -> puntosService.otorgarRespuestaOficial(autor.getId(), respuestaId));
     }
 
     @Override

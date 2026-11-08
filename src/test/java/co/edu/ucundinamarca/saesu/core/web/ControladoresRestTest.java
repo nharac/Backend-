@@ -297,6 +297,39 @@ class ControladoresRestTest {
         }
 
         @Test
+        @DisplayName("Vestidor de Sumi: estado, comprar, vestir e historial de monedas")
+        void vestidor() throws Exception {
+            var servicio = mock(co.edu.ucundinamarca.saesu.gamificacion.application.service.VestidorService.class);
+            MockMvc mvc = mvc(new co.edu.ucundinamarca.saesu.gamificacion.adapters.input.rest.VestidorController(servicio));
+            var estado = new co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.VestidorResponse(
+                    30, false, List.of("sombrero:gorra"), java.util.Map.of("sombrero", "gorra"));
+            when(servicio.estado(LAURA)).thenReturn(estado);
+            when(servicio.comprar(eq(LAURA), any())).thenReturn(estado);
+            when(servicio.vestir(eq(LAURA), any())).thenReturn(estado);
+            when(servicio.historial(LAURA)).thenReturn(List.of(
+                    new co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.MovimientoMonedaResponse(3, "Foro", java.time.LocalDateTime.now())));
+
+            mvc.perform(get("/api/sumi/vestidor").principal(AUTH))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.monedas").value(30));
+            mvc.perform(post("/api/sumi/vestidor/comprar").principal(AUTH).contentType("application/json")
+                            .content("{\"categoria\":\"sombrero\",\"prenda\":\"gorra\"}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.inventario[0]").value("sombrero:gorra"));
+            mvc.perform(post("/api/sumi/vestidor/comprar").principal(AUTH).contentType("application/json").content("{}"))
+                    .andExpect(status().isBadRequest());
+            mvc.perform(put("/api/sumi/vestidor/estilo").principal(AUTH).contentType("application/json")
+                            .content("{\"sombrero\":\"gorra\"}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.estilo.sombrero").value("gorra"));
+            mvc.perform(get("/api/sumi/monedas/historial").principal(AUTH))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$[0].cantidad").value(3));
+
+            when(servicio.comprar(eq(LAURA), any())).thenThrow(
+                    new co.edu.ucundinamarca.saesu.gamificacion.domain.exception.CompraNoValidaException("Te faltan 5 Sumi Monedas"));
+            mvc.perform(post("/api/sumi/vestidor/comprar").principal(AUTH).contentType("application/json")
+                            .content("{\"categoria\":\"sombrero\",\"prenda\":\"corona\"}"))
+                    .andExpect(status().isConflict());
+        }
+
+        @Test
         @DisplayName("Foro: \"Me sirvió\" de una publicación y marcar una respuesta")
         void meSirvio() throws Exception {
             var utiles = mock(co.edu.ucundinamarca.saesu.foro.application.service.UtilesService.class);

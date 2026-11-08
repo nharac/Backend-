@@ -63,7 +63,7 @@ class GestionDocenteServiceTest {
         InOrder orden = inOrder(docenteRepository);
         orden.verify(docenteRepository).quitarOficialesDePublicacion(1L);
         orden.verify(docenteRepository).marcarOficial(100L, 9L);
-        verify(puntosService).otorgarPuntosUnaVez(3L, 15, "Respuesta oficial #100");
+        verify(puntosService).otorgarRespuestaOficial(3L, 100L);
     }
 
     @Test
@@ -76,7 +76,7 @@ class GestionDocenteServiceTest {
         servicio.marcarRespuestaOficial(101L, CORREO_DOCENTE);
 
         verify(docenteRepository).marcarOficial(101L, 9L);
-        verify(puntosService, never()).otorgarPuntosUnaVez(anyLong(), anyInt(), anyString());
+        verify(puntosService, never()).otorgarRespuestaOficial(anyLong(), anyLong());
     }
 
     @Test
