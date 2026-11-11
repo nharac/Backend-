@@ -1,6 +1,7 @@
 package co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc;
 
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.VestidorPort;
+import co.edu.ucundinamarca.saesu.gamificacion.domain.model.ParteSumi;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -14,8 +15,15 @@ import java.util.Set;
 @Component
 public class VestidorJdbcAdapter implements VestidorPort {
 
-    /** Columnas de sumi_estilo, en orden. */
-    public static final List<String> PARTES = List.of("sombrero", "cara", "objeto", "espalda", "bufanda", "fondo");
+    /** Columnas de sumi_estilo, en orden (vienen del enum ParteSumi, nunca de datos del usuario). */
+    public static final List<String> PARTES = ParteSumi.ids();
+    private static final String COLUMNAS = String.join(", ", PARTES);
+    private static final String SQL_ESTILO = "SELECT " + COLUMNAS + " FROM sumi_estilo WHERE usuario_id = ?";
+    private static final String SQL_GUARDAR_ESTILO = "INSERT INTO sumi_estilo (usuario_id, " + COLUMNAS + ", actualizado) VALUES (?, "
+            + String.join(", ", java.util.Collections.nCopies(PARTES.size(), "?")) + ", NOW()) "
+            + "ON CONFLICT (usuario_id) DO UPDATE SET "
+            + PARTES.stream().map(c -> c + " = EXCLUDED." + c).collect(java.util.stream.Collectors.joining(", "))
+            + ", actualizado = NOW()";
 
     private final JdbcTemplate jdbc;
 
@@ -53,8 +61,7 @@ public class VestidorJdbcAdapter implements VestidorPort {
 
     @Override
     public Map<String, String> estilo(Long usuarioId) {
-        List<Map<String, String>> filas = jdbc.query(
-                "SELECT sombrero, cara, objeto, espalda, bufanda, fondo FROM sumi_estilo WHERE usuario_id = ?",
+        List<Map<String, String>> filas = jdbc.query(SQL_ESTILO,
                 (rs, i) -> {
                     Map<String, String> m = new LinkedHashMap<>();
                     for (String parte : PARTES) {
@@ -67,13 +74,9 @@ public class VestidorJdbcAdapter implements VestidorPort {
 
     @Override
     public void guardarEstilo(Long usuarioId, Map<String, String> estilo) {
-        jdbc.update("""
-                INSERT INTO sumi_estilo (usuario_id, sombrero, cara, objeto, espalda, bufanda, fondo, actualizado)
-                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-                ON CONFLICT (usuario_id) DO UPDATE SET sombrero = EXCLUDED.sombrero, cara = EXCLUDED.cara,
-                    objeto = EXCLUDED.objeto, espalda = EXCLUDED.espalda, bufanda = EXCLUDED.bufanda,
-                    fondo = EXCLUDED.fondo, actualizado = NOW()
-                """, usuarioId, estilo.get("sombrero"), estilo.get("cara"), estilo.get("objeto"),
-                estilo.get("espalda"), estilo.get("bufanda"), estilo.get("fondo"));
+        List<Object> args = new java.util.ArrayList<>();
+        args.add(usuarioId);
+        PARTES.forEach(p -> args.add(estilo.get(p)));
+        jdbc.update(SQL_GUARDAR_ESTILO, args.toArray());
     }
 }

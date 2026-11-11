@@ -1,9 +1,11 @@
 package co.edu.ucundinamarca.saesu.practica.adapters.output.jdbc;
 
 import co.edu.ucundinamarca.saesu.practica.ports.output.MiAvancePort;
+import co.edu.ucundinamarca.saesu.core.config.TiempoConfig;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.ZoneId;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
@@ -18,22 +20,30 @@ public class MiAvanceJdbcAdapter implements MiAvancePort {
 
     private final JdbcTemplate jdbc;
 
-    public MiAvanceJdbcAdapter(JdbcTemplate jdbc) {
+    /** Zona del negocio para cortar los días (SAESU_ZONA_HORARIA). */
+    private final ZoneId zona;
+
+    public MiAvanceJdbcAdapter(JdbcTemplate jdbc, ZoneId zona) {
         this.jdbc = jdbc;
+        this.zona = zona;
+    }
+
+    private String sql(String plantilla) {
+        return TiempoConfig.conZona(plantilla, zona);
     }
 
     @Override
     public List<Dia> actividadDesde(Long usuarioId, LocalDate desde) {
-        return jdbc.query("""
-                SELECT CAST(fecha_intento AT TIME ZONE 'America/Bogota' AS DATE) AS dia,
+        return jdbc.query(sql("""
+                SELECT CAST(fecha_intento AT TIME ZONE {zona} AS DATE) AS dia,
                        COUNT(*) AS respondidas,
                        COUNT(*) FILTER (WHERE es_correcta) AS aciertos
                 FROM respuestas_estudiante
                 WHERE usuario_id = ?
-                  AND CAST(fecha_intento AT TIME ZONE 'America/Bogota' AS DATE) >= ?
+                  AND CAST(fecha_intento AT TIME ZONE {zona} AS DATE) >= ?
                 GROUP BY 1
                 ORDER BY 1
-                """, (rs, i) -> new Dia(rs.getDate("dia").toLocalDate(), rs.getLong("respondidas"), rs.getLong("aciertos")),
+                """), (rs, i) -> new Dia(rs.getDate("dia").toLocalDate(), rs.getLong("respondidas"), rs.getLong("aciertos")),
                 usuarioId, Date.valueOf(desde));
     }
 

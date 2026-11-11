@@ -52,7 +52,7 @@ public interface PreguntaJpaRepository extends JpaRepository<PreguntaEntity, Lon
         ORDER BY
           EXISTS (SELECT 1 FROM respuestas_estudiante r
                   WHERE r.pregunta_id = p.id AND r.usuario_id = :usuarioId
-                    AND (r.fecha_intento AT TIME ZONE 'America/Bogota')::date = (NOW() AT TIME ZONE 'America/Bogota')::date),
+                    AND (r.fecha_intento AT TIME ZONE CAST(:zona AS VARCHAR))::date = (NOW() AT TIME ZONE CAST(:zona AS VARCHAR))::date),
           EXISTS (SELECT 1 FROM respuestas_estudiante r
                   WHERE r.pregunta_id = p.id AND r.usuario_id = :usuarioId AND r.es_correcta),
           random()
@@ -62,6 +62,7 @@ public interface PreguntaJpaRepository extends JpaRepository<PreguntaEntity, Lon
             @Param("tema") String tema,
             @Param("dificultad") String dificultad,
             @Param("usuarioId") Long usuarioId,
-            @Param("size") int size
+            @Param("size") int size,
+            @Param("zona") String zona
     );
 }

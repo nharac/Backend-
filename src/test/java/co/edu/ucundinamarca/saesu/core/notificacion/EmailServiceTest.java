@@ -30,7 +30,8 @@ import static org.mockito.Mockito.when;
 class EmailServiceTest {
 
     private final JavaMailSender sender = mock(JavaMailSender.class);
-    private final EmailService email = new EmailService(sender, "saesu@gmail.com", "SAESU", "https://saesu.app/");
+    private final EmailService email = new EmailService(sender, "saesu@gmail.com", "SAESU", "https://saesu.app/",
+            java.time.Clock.systemUTC(), co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
 
     EmailServiceTest() {
         when(sender.createMimeMessage()).thenAnswer(inv -> new MimeMessage(Session.getInstance(new Properties())));
@@ -120,7 +121,7 @@ class EmailServiceTest {
     @Test
     void avisoDeCambioDePasswordDiceCuandoYComo() throws Exception {
         Clock reloj = Clock.fixed(Instant.parse("2026-11-04T22:12:00Z"), ZoneOffset.UTC);
-        EmailService conReloj = new EmailService(sender, "saesu@gmail.com", "SAESU", "https://saesu.app", reloj);
+        EmailService conReloj = new EmailService(sender, "saesu@gmail.com", "SAESU", "https://saesu.app", reloj, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
 
         conReloj.enviarAvisoCambioPassword("ana@ucundinamarca.edu.co", "Ana Ruiz", true);
         conReloj.enviarAvisoCambioPassword("ana@ucundinamarca.edu.co", "Ana", false);
@@ -140,8 +141,8 @@ class EmailServiceTest {
     void fechaHoraColombiaEnEspanolYConAmPm() {
         ZonedDateTime medianoche = ZonedDateTime.parse("2026-11-09T05:05:00Z");   // lunes 0:05 en Colombia
         ZonedDateTime mediodia = ZonedDateTime.parse("2026-11-08T17:30:00Z");     // domingo 12:30 p. m.
-        assertThat(EmailService.fechaHoraColombia(medianoche)).isEqualTo("lunes 9 de noviembre de 2026, 12:05 a. m. (hora de Colombia)");
-        assertThat(EmailService.fechaHoraColombia(mediodia)).isEqualTo("domingo 8 de noviembre de 2026, 12:30 p. m. (hora de Colombia)");
+        assertThat(EmailService.fechaHora(medianoche, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO)).isEqualTo("lunes 9 de noviembre de 2026, 12:05 a. m. (hora de Colombia)");
+        assertThat(EmailService.fechaHora(mediodia, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO)).isEqualTo("domingo 8 de noviembre de 2026, 12:30 p. m. (hora de Colombia)");
     }
 
     @Test

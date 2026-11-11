@@ -1,6 +1,6 @@
 package co.edu.ucundinamarca.saesu.docente.application.service;
 
-import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.input.OtorgarPuntosUseCase;
 import co.edu.ucundinamarca.saesu.docente.domain.exception.RespuestaOficialException;
 import co.edu.ucundinamarca.saesu.docente.ports.input.GestionDocenteUseCase;
 import co.edu.ucundinamarca.saesu.docente.ports.output.DocenteRepositoryPort;
@@ -24,7 +24,7 @@ public class GestionDocenteService implements GestionDocenteUseCase {
     private final PublicacionResumenPort resumenPort;
     private final RespuestaRepositoryPort respuestaRepository;
     private final UsuarioRepositoryPort usuarioRepository;
-    private final PuntosService puntosService;
+    private final OtorgarPuntosUseCase puntosService;
 
     /** Puntos para el estudiante cuando un docente marca su respuesta como oficial. */
 

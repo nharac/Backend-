@@ -89,7 +89,7 @@ class PracticaJpaAdaptersTest {
     @Test
     void preguntasListarContarBuscarYGuardar() {
         PreguntaJpaRepository repo = mock(PreguntaJpaRepository.class);
-        PreguntaRepositoryAdapter adapter = new PreguntaRepositoryAdapter(repo, new PreguntaMapper());
+        PreguntaRepositoryAdapter adapter = new PreguntaRepositoryAdapter(repo, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO, new PreguntaMapper());
         PreguntaEntity e = new PreguntaEntity(7L, "derivadas", "Deriva x²", "intermedio", "Regla de la potencia",
                 HACE_UN_RATO, HACE_UN_RATO);
         when(repo.buscarConFiltros(eq("derivadas"), eq(null), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(e)));
@@ -104,7 +104,7 @@ class PracticaJpaAdaptersTest {
         });
         assertThat(adapter.contar("derivadas", null)).isEqualTo(1L);
         assertThat(adapter.buscarPorId(7L)).isPresent();
-        when(repo.paraSesion("derivadas", null, 4L, 10)).thenReturn(List.of(e));
+        when(repo.paraSesion("derivadas", null, 4L, 10, "America/Bogota")).thenReturn(List.of(e));
         assertThat(adapter.paraSesion("derivadas", null, 4L, 10)).singleElement()
                 .extracting(Pregunta::getId).isEqualTo(7L);
 

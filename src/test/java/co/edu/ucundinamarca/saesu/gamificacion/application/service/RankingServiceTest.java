@@ -42,7 +42,7 @@ class RankingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RankingService(port, RELOJ);
+        service = new RankingService(port, null, RELOJ, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
         lenient().when(port.resumenPuntos(any(), any(), any())).thenReturn(new RankingPort.ResumenPuntos(0, 0, 0, 0));
     }
 

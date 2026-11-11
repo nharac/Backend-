@@ -33,7 +33,7 @@ class GamificacionPuertosTest {
     @Test
     @DisplayName("Ranking: correo que no existe -> UsuarioNoEncontradoException (404)")
     void rankingSinUsuario() {
-        RankingService service = new RankingService(rankingPort, usuarios, Clock.systemUTC());
+        RankingService service = new RankingService(rankingPort, usuarios, Clock.systemUTC(), co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
         when(usuarios.buscarPorCorreo("nadie@ucundinamarca.edu.co")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.miPosicion("nadie@ucundinamarca.edu.co", "semana"))

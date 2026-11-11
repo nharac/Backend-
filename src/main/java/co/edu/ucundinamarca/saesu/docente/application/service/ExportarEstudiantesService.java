@@ -17,16 +17,17 @@ import java.time.ZoneId;
 public class ExportarEstudiantesService {
 
     private static final Logger log = LoggerFactory.getLogger(ExportarEstudiantesService.class);
-    private static final ZoneId COLOMBIA = ZoneId.of("America/Bogota");
 
     private final EstadisticasDocenteService estadisticas;
     private final ReporteEstudiantesPort reporte;
     private final Clock clock;
 
-    public ExportarEstudiantesService(EstadisticasDocenteService estadisticas, ReporteEstudiantesPort reporte) {
+    /** La fecha del reporte va en la zona del negocio (SAESU_ZONA_HORARIA). */
+    public ExportarEstudiantesService(EstadisticasDocenteService estadisticas, ReporteEstudiantesPort reporte,
+                                      Clock reloj, ZoneId zona) {
         this.estadisticas = estadisticas;
         this.reporte = reporte;
-        this.clock = Clock.system(COLOMBIA);
+        this.clock = reloj.withZone(zona);
     }
 
     /** Excel con dos hojas: "Estudiantes" (una fila por estudiante) y "Resumen" (el grupo). */

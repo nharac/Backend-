@@ -2,6 +2,7 @@ package co.edu.ucundinamarca.saesu.gamificacion.application.service;
 
 import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jpa.entity.PuntoHistorialEntity;
 import co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jpa.repository.PuntoHistorialJpaRepository;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.input.OtorgarPuntosUseCase;
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.MonedasPort;
 import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.entity.UsuarioEntity;
 import co.edu.ucundinamarca.saesu.usuario.adapters.output.jpa.repository.UsuarioJpaRepository;
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
  * racha = 2 por día y 15 extra cada 7 días seguidos.
  */
 @Service
-public class PuntosService {
+public class PuntosService implements OtorgarPuntosUseCase {
 
     private final PuntoHistorialJpaRepository puntosRepository;
     private final UsuarioJpaRepository usuarioRepository;
@@ -42,6 +43,7 @@ public class PuntosService {
     /** Máximo de respuestas del foro que dan puntos por día (evita inflar el ranking con spam). */
     public static final int MAX_RESPUESTAS_FORO_CON_PUNTOS_POR_DIA = 3;
 
+    @Override
     @Transactional
     public void otorgarPuntos(Long usuarioId, int cantidad, String motivo) {
         dar(usuarioId, cantidad, Math.max(1, cantidad / 5), motivo);
@@ -65,6 +67,7 @@ public class PuntosService {
      * y nada por responder en una publicación propia.
      * @return true si se dieron puntos
      */
+    @Override
     @Transactional
     public boolean otorgarPuntosForo(Long usuarioId, Long autorPublicacionId) {
         if (usuarioId.equals(autorPublicacionId)) {
@@ -79,6 +82,7 @@ public class PuntosService {
     }
 
     /** Premio para quien escribió una respuesta que un docente marcó como oficial (una sola vez por respuesta). */
+    @Override
     @Transactional
     public void otorgarRespuestaOficial(Long autorId, Long respuestaId) {
         String motivo = "Respuesta oficial #" + respuestaId;
@@ -91,6 +95,7 @@ public class PuntosService {
      * Cuenta el día para la racha sin dar puntos
      * (ej. acertar una pregunta que ya estaba resuelta).
      */
+    @Override
     @Transactional
     public void registrarActividad(Long usuarioId) {
         UsuarioEntity usuario = usuarioRepository.findById(usuarioId)

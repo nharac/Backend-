@@ -9,7 +9,6 @@ import co.edu.ucundinamarca.saesu.usuario.ports.output.CodigoRecuperacionPort.Co
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +35,6 @@ import java.util.Optional;
 public class RecuperarPasswordService {
 
     /** Hora de Colombia: las diferencias de tiempo se calculan con zona (regla S8700). */
-    private static final ZoneId ZONA = ZoneId.of("America/Bogota");
 
     static final int MINUTOS_VIGENCIA = 15;
     static final int MAX_INTENTOS = 5;
@@ -52,20 +50,17 @@ public class RecuperarPasswordService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final Clock clock;
+    private final ZoneId zona;
 
-    @Autowired
+    /** Reloj y zona llegan como beans (TiempoConfig); en las pruebas se pasa un reloj fijo. */
     public RecuperarPasswordService(UsuarioRepositoryPort usuarioRepository, CodigoRecuperacionPort codigoPort,
-                                    PasswordEncoder passwordEncoder, EmailService emailService) {
-        this(usuarioRepository, codigoPort, passwordEncoder, emailService, Clock.systemDefaultZone());
-    }
-
-    RecuperarPasswordService(UsuarioRepositoryPort usuarioRepository, CodigoRecuperacionPort codigoPort,
-                             PasswordEncoder passwordEncoder, EmailService emailService, Clock clock) {
+                                    PasswordEncoder passwordEncoder, EmailService emailService, Clock clock, ZoneId zona) {
         this.usuarioRepository = usuarioRepository;
         this.codigoPort = codigoPort;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.clock = clock;
+        this.zona = zona;
     }
 
     /** Paso 1. No lanza error si el correo no existe (para no revelar cuentas). */
@@ -81,7 +76,7 @@ public class RecuperarPasswordService {
 
         Optional<LocalDateTime> ultimo = codigoPort.fechaUltimoCodigo(id);
         if (ultimo.isPresent()
-                && Duration.between(ultimo.get().atZone(ZONA), LocalDateTime.now(clock).atZone(ZONA)).getSeconds() < SEGUNDOS_ENTRE_CODIGOS) {
+                && Duration.between(ultimo.get().atZone(zona), LocalDateTime.now(clock).atZone(zona)).getSeconds() < SEGUNDOS_ENTRE_CODIGOS) {
             return; // ya se envió uno hace menos de un minuto
         }
 

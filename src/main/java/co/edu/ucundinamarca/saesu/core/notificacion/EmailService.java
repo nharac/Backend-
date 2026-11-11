@@ -5,7 +5,7 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import co.edu.ucundinamarca.saesu.core.config.TiempoConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -28,7 +28,6 @@ import java.time.ZonedDateTime;
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
-    private static final ZoneId COLOMBIA = ZoneId.of("America/Bogota");
     private static final String FIRMA = "El equipo de SAESU - Universidad de Cundinamarca";
 
     private final JavaMailSender mailSender;
@@ -36,22 +35,20 @@ public class EmailService {
     private final String nombreRemitente;
     private final String urlApp;
     private final Clock clock;
+    /** Las horas de los correos se muestran en la zona del negocio (SAESU_ZONA_HORARIA). */
+    private final ZoneId zona;
 
-    @Autowired
     public EmailService(JavaMailSender mailSender,
                         @Value("${mail.remitente.correo}") String remitente,
                         @Value("${mail.remitente.nombre:SAESU}") String nombreRemitente,
-                        @Value("${app.url:http://localhost}") String urlApp) {
-        this(mailSender, remitente, nombreRemitente, urlApp, Clock.system(COLOMBIA));
-    }
-
-    /** Constructor para pruebas (reloj fijo). */
-    EmailService(JavaMailSender mailSender, String remitente, String nombreRemitente, String urlApp, Clock clock) {
+                        @Value("${app.url:http://localhost}") String urlApp,
+                        Clock clock, ZoneId zona) {
         this.mailSender = mailSender;
         this.remitente = remitente;
         this.nombreRemitente = nombreRemitente;
         this.urlApp = sinBarraFinal(urlApp);
         this.clock = clock;
+        this.zona = zona;
     }
 
     @Async
@@ -103,7 +100,7 @@ public class EmailService {
     public void enviarAvisoCambioPassword(String destinatario, String nombre, boolean conCodigoDeRecuperacion) {
         String n = primerNombre(nombre);
         String como = conCodigoDeRecuperacion ? "con un código de recuperación" : "desde tu perfil";
-        String cuando = fechaHoraColombia(ZonedDateTime.now(clock));
+        String cuando = fechaHora(ZonedDateTime.now(clock), zona);
         String recuperar = urlApp + "/auth/recuperar";
         enviar(destinatario, "Tu contraseña de SAESU cambió", "Aviso de seguridad",
                 "Hola " + n + ",\n\n"
@@ -122,12 +119,13 @@ public class EmailService {
             "septiembre", "octubre", "noviembre", "diciembre"};
 
     /** "miércoles 4 de noviembre de 2026, 5:12 p. m. (hora de Colombia)", sin depender del idioma del servidor. */
-    static String fechaHoraColombia(ZonedDateTime momento) {
-        ZonedDateTime t = momento.withZoneSameInstant(COLOMBIA);
+    static String fechaHora(ZonedDateTime momento, ZoneId zona) {
+        ZonedDateTime t = momento.withZoneSameInstant(zona);
         int hora12 = t.getHour() % 12 == 0 ? 12 : t.getHour() % 12;
-        return "%s %d de %s de %d, %d:%02d %s (hora de Colombia)".formatted(
+        return "%s %d de %s de %d, %d:%02d %s (%s)".formatted(
                 DIAS[t.getDayOfWeek().getValue() - 1], t.getDayOfMonth(), MESES[t.getMonthValue() - 1], t.getYear(),
-                hora12, t.getMinute(), t.getHour() < 12 ? "a. m." : "p. m.");
+                hora12, t.getMinute(), t.getHour() < 12 ? "a. m." : "p. m.",
+                TiempoConfig.ZONA_POR_DEFECTO.equals(zona) ? "hora de Colombia" : "hora " + zona.getId());
     }
 
     private void enviar(String para, String asunto, String etiqueta, String texto, String cuerpoHtml) {

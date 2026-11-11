@@ -51,7 +51,7 @@ class RecuperarPasswordServiceTest {
     @BeforeEach
     void preparar() {
         servicio = new RecuperarPasswordService(usuarioRepository, codigoPort, encoder, emailService,
-                Clock.fixed(AHORA.atZone(BOGOTA).toInstant(), BOGOTA));
+                Clock.fixed(AHORA.atZone(BOGOTA).toInstant(), BOGOTA), BOGOTA);
     }
 
     private RestablecerPasswordRequest pedido(String codigo) {

@@ -40,7 +40,7 @@ class EstadisticasDocenteServiceTest {
     @BeforeEach
     void preparar() {
         Clock reloj = Clock.fixed(AHORA.atZone(BOGOTA).toInstant(), BOGOTA);
-        servicio = new EstadisticasDocenteService(port, reloj);
+        servicio = new EstadisticasDocenteService(port, reloj, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
     }
 
     private static FilaEstudiante fila(Long id, String nombre, long intentos, long correctas, LocalDateTime ultima) {

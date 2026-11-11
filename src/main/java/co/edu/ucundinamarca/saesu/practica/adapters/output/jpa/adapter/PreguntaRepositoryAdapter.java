@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +23,8 @@ import java.util.Optional;
 public class PreguntaRepositoryAdapter implements PreguntaRepositoryPort {
 
     private final PreguntaJpaRepository jpaRepository;
+    /** Zona del negocio: "lo que ya respondió hoy" se cuenta con su medianoche (SAESU_ZONA_HORARIA). */
+    private final ZoneId zona;
     private final PreguntaMapper mapper;
 
     @Override
@@ -41,7 +44,7 @@ public class PreguntaRepositoryAdapter implements PreguntaRepositoryPort {
 
     @Override
     public List<Pregunta> paraSesion(String tema, String dificultad, Long usuarioId, int size) {
-        return jpaRepository.paraSesion(tema, dificultad, usuarioId, size).stream()
+        return jpaRepository.paraSesion(tema, dificultad, usuarioId, size, zona.getId()).stream()
                 .map(mapper::toDominio)
                 .toList();
     }

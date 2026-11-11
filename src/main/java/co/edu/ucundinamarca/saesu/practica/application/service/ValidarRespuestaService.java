@@ -1,7 +1,7 @@
 package co.edu.ucundinamarca.saesu.practica.application.service;
 
 import co.edu.ucundinamarca.saesu.gamificacion.application.service.LogrosService;
-import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService; // <-- NUEVO IMPORT
+import co.edu.ucundinamarca.saesu.gamificacion.ports.input.OtorgarPuntosUseCase;
 import co.edu.ucundinamarca.saesu.practica.application.dto.response.ValidacionResponse;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.OpcionInvalidaException;
 import co.edu.ucundinamarca.saesu.practica.domain.exception.PreguntaNoEncontradaException;
@@ -32,7 +32,7 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
     private final OpcionRepositoryPort opcionRepository;
     private final RespuestaEstudianteRepositoryPort respuestaRepository;
     private final UsuarioConsultaPort usuarioConsultaPort;
-    private final PuntosService puntosService; // <-- NUEVO
+    private final OtorgarPuntosUseCase puntosService;
     private final LogrosService logrosService;
 
     /** Puntaje de un acierto: empieza en 20 y baja 5 por cada fallo, mínimo 5. */

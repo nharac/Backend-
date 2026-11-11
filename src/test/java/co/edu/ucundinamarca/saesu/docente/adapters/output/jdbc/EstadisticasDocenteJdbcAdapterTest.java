@@ -16,7 +16,7 @@ class EstadisticasDocenteJdbcAdapterTest {
     private static final LocalDateTime AYER = LocalDateTime.of(2026, 10, 29, 18, 0);
 
     private final JdbcFalso jdbc = new JdbcFalso();
-    private final EstadisticasDocenteJdbcAdapter adapter = new EstadisticasDocenteJdbcAdapter(jdbc);
+    private final EstadisticasDocenteJdbcAdapter adapter = new EstadisticasDocenteJdbcAdapter(jdbc, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
 
     @Test
     void estudiantesConYSinQuices() {

@@ -86,6 +86,12 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, mensaje, req.getRequestURI());
     }
 
+    /** El reto del día ya se respondió (una sola oportunidad). */
+    @ExceptionHandler(co.edu.ucundinamarca.saesu.practica.domain.exception.RetoYaRespondidoException.class)
+    public ResponseEntity<ErrorResponse> handleRetoYaRespondido(RuntimeException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), req.getRequestURI());
+    }
+
     /** Compra del vestidor de Sumi que no se puede hacer (ya la tiene o no le alcanzan las monedas). */
     @ExceptionHandler(co.edu.ucundinamarca.saesu.gamificacion.domain.exception.CompraNoValidaException.class)
     public ResponseEntity<ErrorResponse> handleCompraNoValida(RuntimeException ex, HttpServletRequest req) {

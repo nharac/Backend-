@@ -18,7 +18,7 @@ class MiAvanceJdbcAdapterTest {
         LocalDate dia = LocalDate.of(2026, 11, 3);
         JdbcFalso jdbc = new JdbcFalso().filas("AS dia", List.of(fila("dia", Date.valueOf(dia), "respondidas", 7L, "aciertos", 5L)));
 
-        List<MiAvancePort.Dia> dias = new MiAvanceJdbcAdapter(jdbc).actividadDesde(4L, LocalDate.of(2026, 11, 1));
+        List<MiAvancePort.Dia> dias = new MiAvanceJdbcAdapter(jdbc, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO).actividadDesde(4L, LocalDate.of(2026, 11, 1));
 
         assertThat(dias).containsExactly(new MiAvancePort.Dia(dia, 7, 5));
         assertThat(jdbc.consultas.get(0).sql()).contains("America/Bogota");
@@ -30,14 +30,14 @@ class MiAvanceJdbcAdapterTest {
         JdbcFalso jdbc = new JdbcFalso().filas("GROUP BY p.tema, p.dificultad",
                 List.of(fila("tema", "limites", "dificultad", "basico", "respondidas", 6L, "correctas", 4L)));
 
-        assertThat(new MiAvanceJdbcAdapter(jdbc).rendimiento(4L))
+        assertThat(new MiAvanceJdbcAdapter(jdbc, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO).rendimiento(4L))
                 .containsExactly(new MiAvancePort.Rendimiento("limites", "basico", 6, 4));
     }
 
     @Test
     void metaSemanalLeerYGuardar() {
         JdbcFalso jdbc = new JdbcFalso();
-        MiAvanceJdbcAdapter adapter = new MiAvanceJdbcAdapter(jdbc);
+        MiAvanceJdbcAdapter adapter = new MiAvanceJdbcAdapter(jdbc, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
         assertThat(adapter.metaSemanal(99L)).as("usuario que no existe").isZero();
 
         jdbc.filas("meta_semanal FROM usuarios", List.of(fila("meta_semanal", 30)));

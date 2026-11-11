@@ -33,7 +33,7 @@ class ExportarEstudiantesServiceTest {
         when(estadisticas.estadisticasGrupo()).thenReturn(grupo);
         when(reporte.generar(eq(lista), eq(grupo), any())).thenReturn(new byte[2048]);
 
-        byte[] archivo = new ExportarEstudiantesService(estadisticas, reporte).excel();
+        byte[] archivo = new ExportarEstudiantesService(estadisticas, reporte, java.time.Clock.systemUTC(), co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO).excel();
 
         assertThat(archivo).hasSize(2048);
         verify(reporte).generar(eq(lista), eq(grupo), any());
@@ -43,6 +43,6 @@ class ExportarEstudiantesServiceTest {
     @DisplayName("El CSV sale del servicio de estadísticas")
     void csv() {
         when(estadisticas.exportarCsv()).thenReturn("nombre;correo\n");
-        assertThat(new ExportarEstudiantesService(estadisticas, reporte).csv()).isEqualTo("nombre;correo\n");
+        assertThat(new ExportarEstudiantesService(estadisticas, reporte, java.time.Clock.systemUTC(), co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO).csv()).isEqualTo("nombre;correo\n");
     }
 }

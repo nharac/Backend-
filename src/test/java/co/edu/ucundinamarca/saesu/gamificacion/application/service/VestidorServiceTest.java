@@ -70,7 +70,7 @@ class VestidorServiceTest {
         assertThat(r.monedas()).isEqualTo(50);
         assertThat(r.docente()).isFalse();
         assertThat(r.inventario()).containsExactly("sombrero:gorra");
-        assertThat(r.estilo()).containsEntry("bufanda", "saesu").containsEntry("fondo", "ninguno").hasSize(6);
+        assertThat(r.estilo()).containsEntry("bufanda", "saesu").containsEntry("fondo", "ninguno").containsEntry("ropa", "ninguno").hasSize(7);
     }
 
     @Test
@@ -134,7 +134,7 @@ class VestidorServiceTest {
 
         servicio.vestir(ANA, pedido);
 
-        verify(vestidor).guardarEstilo(4L, Map.of("sombrero", "gorra", "cara", "ninguno", "objeto", "cafe",
+        verify(vestidor).guardarEstilo(4L, Map.of("sombrero", "gorra", "cara", "ninguno", "ropa", "ninguno", "objeto", "cafe",
                 "espalda", "ninguno", "bufanda", "saesu", "fondo", "ninguno"));
     }
 

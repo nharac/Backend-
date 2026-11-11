@@ -12,7 +12,7 @@ import co.edu.ucundinamarca.saesu.foro.domain.model.Respuesta;
 import co.edu.ucundinamarca.saesu.foro.ports.input.ResponderPublicacionUseCase;
 import co.edu.ucundinamarca.saesu.foro.ports.output.PublicacionRepositoryPort;
 import co.edu.ucundinamarca.saesu.foro.ports.output.RespuestaRepositoryPort;
-import co.edu.ucundinamarca.saesu.gamificacion.application.service.PuntosService;
+import co.edu.ucundinamarca.saesu.gamificacion.ports.input.OtorgarPuntosUseCase;
 import co.edu.ucundinamarca.saesu.usuario.domain.model.Usuario;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
 import co.edu.ucundinamarca.saesu.core.storage.StorageService;
@@ -36,7 +36,7 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
     private final RespuestaRepositoryPort respuestaRepository;
     private final UsuarioRepositoryPort usuarioRepository;
     private final EmailService emailService; // emails
-    private final PuntosService puntosService; // servicio de puntos
+    private final OtorgarPuntosUseCase puntosService; // puerto de gamificación
     private final StorageService storageService; // valida que la imagen sea de nuestro bucket
 
     @Override

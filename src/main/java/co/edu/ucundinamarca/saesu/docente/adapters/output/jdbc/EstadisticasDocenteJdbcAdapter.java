@@ -6,10 +6,12 @@ import co.edu.ucundinamarca.saesu.docente.application.dto.response.EstadisticasG
 import co.edu.ucundinamarca.saesu.docente.application.dto.response.EstudianteDetalleResponse.IntentoReciente;
 import co.edu.ucundinamarca.saesu.docente.application.dto.response.EstudianteDetalleResponse.PreguntaConFallos;
 import co.edu.ucundinamarca.saesu.docente.ports.output.EstadisticasDocentePort;
+import co.edu.ucundinamarca.saesu.core.config.TiempoConfig;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -28,7 +30,7 @@ import java.util.Optional;
 public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
 
     private static final String ES_ESTUDIANTE = "UPPER(REPLACE(u.rol, 'ROLE_', '')) = 'ESTUDIANTE'";
-    private static final String HOY = "(NOW() AT TIME ZONE 'America/Bogota')::date";
+    private static final String HOY = "(NOW() AT TIME ZONE {zona})::date";
 
     private static final String SELECT_ESTUDIANTE_PLANTILLA = """
             SELECT u.id, u.nombre, u.correo, u.foto_perfil_url,
@@ -77,7 +79,7 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
             SELECT d::date AS fecha, COUNT(r.id) AS intentos, COUNT(DISTINCT r.usuario_id) AS estudiantes
             FROM generate_series(%1$s - ?, %1$s, INTERVAL '1 day') AS d
             LEFT JOIN respuestas_estudiante r
-                   ON (r.fecha_intento AT TIME ZONE 'America/Bogota')::date = d::date
+                   ON (r.fecha_intento AT TIME ZONE {zona})::date = d::date
                   %2$s
             GROUP BY d
             ORDER BY d
@@ -88,8 +90,16 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
 
     private final JdbcTemplate jdbc;
 
-    public EstadisticasDocenteJdbcAdapter(JdbcTemplate jdbc) {
+    /** Zona del negocio para cortar los días (SAESU_ZONA_HORARIA). */
+    private final ZoneId zona;
+
+    public EstadisticasDocenteJdbcAdapter(JdbcTemplate jdbc, ZoneId zona) {
         this.jdbc = jdbc;
+        this.zona = zona;
+    }
+
+    private String sql(String plantilla) {
+        return TiempoConfig.conZona(plantilla, zona);
     }
 
     private static LocalDateTime fecha(ResultSet rs, String columna) throws SQLException {
@@ -114,12 +124,12 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
 
     @Override
     public List<FilaEstudiante> listarEstudiantes() {
-        return jdbc.query(SQL_LISTAR_ESTUDIANTES, FILA_ESTUDIANTE);
+        return jdbc.query(sql(SQL_LISTAR_ESTUDIANTES), FILA_ESTUDIANTE);
     }
 
     @Override
     public Optional<FilaEstudiante> buscarEstudiante(Long usuarioId) {
-        return jdbc.query(SQL_BUSCAR_ESTUDIANTE, FILA_ESTUDIANTE, usuarioId)
+        return jdbc.query(sql(SQL_BUSCAR_ESTUDIANTE), FILA_ESTUDIANTE, usuarioId)
                 .stream().findFirst();
     }
 
@@ -210,8 +220,8 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
                 rs.getDate("fecha").toLocalDate(), rs.getLong("intentos"), rs.getLong("estudiantes"));
         int desde = Math.max(dias, 1) - 1;
         return usuarioId == null
-                ? jdbc.query(SQL_ACTIVIDAD_GRUPO, mapper, desde)
-                : jdbc.query(SQL_ACTIVIDAD_ESTUDIANTE, mapper, desde, usuarioId);
+                ? jdbc.query(sql(SQL_ACTIVIDAD_GRUPO), mapper, desde)
+                : jdbc.query(sql(SQL_ACTIVIDAD_ESTUDIANTE), mapper, desde, usuarioId);
     }
 
     @Override

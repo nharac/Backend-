@@ -6,7 +6,6 @@ import co.edu.ucundinamarca.saesu.gamificacion.ports.input.RankingUseCase;
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.RankingPort;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.UsuarioNoEncontradoException;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -28,7 +27,6 @@ public class RankingService implements RankingUseCase {
 
     public static final int TAMANO_TOP = 10;
     private static final int MOVIMIENTOS = 6;
-    private static final ZoneId COLOMBIA = ZoneId.of("America/Bogota");
 
     public enum Periodo {
         TOTAL, SEMANA, MES;
@@ -47,22 +45,16 @@ public class RankingService implements RankingUseCase {
 
     private final RankingPort port;
     private final UsuarioRepositoryPort usuarios;
+    /** Reloj del servidor: en su zona están guardadas las fechas de la base. */
     private final Clock clock;
+    /** Zona del negocio para saber dónde empieza la semana o el mes (SAESU_ZONA_HORARIA). */
+    private final ZoneId zona;
 
-    @Autowired
-    public RankingService(RankingPort port, UsuarioRepositoryPort usuarios) {
-        this(port, usuarios, Clock.systemDefaultZone());
-    }
-
-    /** Constructor para pruebas (reloj fijo). */
-    RankingService(RankingPort port, Clock clock) {
-        this(port, null, clock);
-    }
-
-    RankingService(RankingPort port, UsuarioRepositoryPort usuarios, Clock clock) {
+    public RankingService(RankingPort port, UsuarioRepositoryPort usuarios, Clock clock, ZoneId zona) {
         this.port = port;
         this.usuarios = usuarios;
         this.clock = clock;
+        this.zona = zona;
     }
 
     @Override
@@ -105,7 +97,7 @@ public class RankingService implements RankingUseCase {
                 .toList();
 
         RankingPort.ResumenPuntos resumen = port.resumenPuntos(usuarioId,
-                inicioDe(LocalDate.now(clock.withZone(COLOMBIA))), desde(Periodo.SEMANA));
+                inicioDe(LocalDate.now(clock.withZone(zona))), desde(Periodo.SEMANA));
 
         return new MiPosicionResponse(
                 periodo.name().toLowerCase(Locale.ROOT),
@@ -123,7 +115,7 @@ public class RankingService implements RankingUseCase {
 
     /** Inicio del periodo en la hora del servidor (null = desde siempre). */
     LocalDateTime desde(Periodo periodo) {
-        LocalDate hoy = LocalDate.now(clock.withZone(COLOMBIA));
+        LocalDate hoy = LocalDate.now(clock.withZone(zona));
         return switch (periodo) {
             case TOTAL -> null;
             case SEMANA -> inicioDe(hoy.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
@@ -132,6 +124,6 @@ public class RankingService implements RankingUseCase {
     }
 
     private LocalDateTime inicioDe(LocalDate dia) {
-        return dia.atStartOfDay(COLOMBIA).withZoneSameInstant(clock.getZone()).toLocalDateTime();
+        return dia.atStartOfDay(zona).withZoneSameInstant(clock.getZone()).toLocalDateTime();
     }
 }

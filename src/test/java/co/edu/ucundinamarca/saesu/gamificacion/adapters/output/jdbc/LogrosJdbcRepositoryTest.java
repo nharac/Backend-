@@ -24,7 +24,7 @@ class LogrosJdbcRepositoryTest {
                         "madrugadas", 0L, "racha", 5L, "quices", 3L, "quices_perfectos", 1L, "publicaciones", 2L,
                         "respuestas_foro", 7L, "oficiales", 1L, "mensajes_tutor", 15L, "puntos", 640L, "correo", "ana@ucundinamarca.edu.co")));
 
-        Estadisticas e = new LogrosJdbcRepository(jdbc).estadisticas(3L);
+        Estadisticas e = new LogrosJdbcRepository(jdbc, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO).estadisticas(3L);
 
         assertThat(e.get(Cifra.ACIERTOS)).isEqualTo(30L);
         assertThat(e.get(Cifra.OFICIALES)).isEqualTo(1L);
@@ -43,7 +43,7 @@ class LogrosJdbcRepositoryTest {
     @Test
     void rachaYPuntosDeUnUsuarioQueNoExisteSonCero() {
         JdbcFalso jdbc = new JdbcFalso();
-        LogrosJdbcRepository repo = new LogrosJdbcRepository(jdbc);
+        LogrosJdbcRepository repo = new LogrosJdbcRepository(jdbc, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
         assertThat(repo.rachaYPuntos(99L)).containsExactly(0L, 0L);
 
         jdbc.filas("AS racha", List.of(fila("racha", 4L, "puntos", 220L)));
@@ -54,7 +54,7 @@ class LogrosJdbcRepositoryTest {
     void logrosObtenidosYGuardar() {
         OffsetDateTime cuando = OffsetDateTime.of(2026, 10, 20, 15, 0, 0, 0, ZoneOffset.UTC);
         JdbcFalso jdbc = new JdbcFalso().filas("FROM usuario_logros", List.of(fila("codigo", "PRIMER_ACIERTO", "fecha_obtenido", cuando)));
-        LogrosJdbcRepository repo = new LogrosJdbcRepository(jdbc);
+        LogrosJdbcRepository repo = new LogrosJdbcRepository(jdbc, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
 
         assertThat(repo.obtenidos(3L)).containsEntry("PRIMER_ACIERTO", cuando);
         assertThat(repo.guardar(3L, "RACHA_7")).isTrue();

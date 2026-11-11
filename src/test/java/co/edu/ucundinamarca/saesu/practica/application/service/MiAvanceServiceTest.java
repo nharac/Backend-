@@ -35,12 +35,12 @@ class MiAvanceServiceTest {
     private static final String CORREO = "ana@ucundinamarca.edu.co";
     private static final Long ID = 9L;
     /** Miércoles 4 de noviembre de 2026, 11 p. m. en Colombia (ya es jueves en UTC). */
-    private static final Clock RELOJ = Clock.fixed(Instant.parse("2026-11-05T04:00:00Z"), MiAvanceService.COLOMBIA);
+    private static final Clock RELOJ = Clock.fixed(Instant.parse("2026-11-05T04:00:00Z"), co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
     private static final LocalDate HOY = LocalDate.of(2026, 11, 4);
 
     private final MiAvancePort port = mock(MiAvancePort.class);
     private final UsuarioRepositoryPort usuarios = mock(UsuarioRepositoryPort.class);
-    private final MiAvanceService servicio = new MiAvanceService(port, usuarios, RELOJ);
+    private final MiAvanceService servicio = new MiAvanceService(port, usuarios, RELOJ, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
 
     @BeforeEach
     void setUp() {

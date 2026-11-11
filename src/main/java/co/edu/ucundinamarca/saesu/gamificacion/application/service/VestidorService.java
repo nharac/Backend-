@@ -4,6 +4,7 @@ import co.edu.ucundinamarca.saesu.gamificacion.application.dto.request.CompraReq
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.MovimientoMonedaResponse;
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.VestidorResponse;
 import co.edu.ucundinamarca.saesu.gamificacion.domain.exception.CompraNoValidaException;
+import co.edu.ucundinamarca.saesu.gamificacion.domain.model.ParteSumi;
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.MonedasPort;
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.VestidorPort;
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.VestidorPort.UsuarioBasico;
@@ -22,21 +23,9 @@ import java.util.Set;
 @Service
 public class VestidorService {
 
-    /** Partes del vestidor y lo que lleva Sumi si nunca se ha vestido. */
-    static final Map<String, String> POR_DEFECTO;
-
-    static {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("sombrero", "ninguno");
-        m.put("cara", "ninguno");
-        m.put("objeto", "ninguno");
-        m.put("espalda", "ninguno");
-        m.put("bufanda", "saesu");
-        m.put("fondo", "ninguno");
-        POR_DEFECTO = Map.copyOf(m);
-    }
-
-    private static final List<String> PARTES = List.of("sombrero", "cara", "objeto", "espalda", "bufanda", "fondo");
+    /** Partes del vestidor y lo que lleva Sumi si nunca se ha vestido (fuente única: ParteSumi). */
+    static final Map<String, String> POR_DEFECTO = Map.copyOf(ParteSumi.estiloClasico());
+    private static final List<String> PARTES = ParteSumi.ids();
     private static final int MOVIMIENTOS = 30;
 
     private final VestidorPort vestidor;

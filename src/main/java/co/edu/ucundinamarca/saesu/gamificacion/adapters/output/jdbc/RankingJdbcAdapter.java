@@ -1,9 +1,11 @@
 package co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc;
 
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.RankingPort;
+import co.edu.ucundinamarca.saesu.core.config.TiempoConfig;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,7 +19,7 @@ import java.util.Optional;
 @Component
 public class RankingJdbcAdapter implements RankingPort {
 
-    private static final String HOY = "(NOW() AT TIME ZONE 'America/Bogota')::date";
+    private static final String HOY = "(NOW() AT TIME ZONE {zona})::date";
     private static final String RACHA =
             "CASE WHEN u.ultima_fecha_practica >= " + HOY + " - 1 THEN COALESCE(u.racha_actual, 0) ELSE 0 END";
 
@@ -56,8 +58,16 @@ public class RankingJdbcAdapter implements RankingPort {
 
     private final JdbcTemplate jdbc;
 
-    public RankingJdbcAdapter(JdbcTemplate jdbc) {
+    /** Zona del negocio para cortar los días (SAESU_ZONA_HORARIA). */
+    private final ZoneId zona;
+
+    public RankingJdbcAdapter(JdbcTemplate jdbc, ZoneId zona) {
         this.jdbc = jdbc;
+        this.zona = zona;
+    }
+
+    private String sql(String plantilla) {
+        return TiempoConfig.conZona(plantilla, zona);
     }
 
     private static Timestamp ts(LocalDateTime desde) {
@@ -66,7 +76,7 @@ public class RankingJdbcAdapter implements RankingPort {
 
     @Override
     public List<FilaRanking> top(LocalDateTime desde, int limite) {
-        return jdbc.query(SQL_TOP,
+        return jdbc.query(sql(SQL_TOP),
                 (rs, i) -> new FilaRanking(
                         rs.getInt("posicion"),
                         rs.getLong("id"),
@@ -79,7 +89,7 @@ public class RankingJdbcAdapter implements RankingPort {
 
     @Override
     public Optional<PosicionUsuario> posicionDe(Long usuarioId, LocalDateTime desde) {
-        return jdbc.query(SQL_POSICION,
+        return jdbc.query(sql(SQL_POSICION),
                 (rs, i) -> new PosicionUsuario(
                         rs.getInt("posicion"),
                         rs.getLong("puntos"),
@@ -91,13 +101,13 @@ public class RankingJdbcAdapter implements RankingPort {
 
     @Override
     public long participantes(LocalDateTime desde) {
-        Long n = jdbc.queryForObject(SQL_PARTICIPANTES, Long.class, ts(desde));
+        Long n = jdbc.queryForObject(sql(SQL_PARTICIPANTES), Long.class, ts(desde));
         return n == null ? 0 : n;
     }
 
     @Override
     public ResumenPuntos resumenPuntos(Long usuarioId, LocalDateTime inicioHoy, LocalDateTime inicioSemana) {
-        List<ResumenPuntos> r = jdbc.query(SQL_RESUMEN,
+        List<ResumenPuntos> r = jdbc.query(sql(SQL_RESUMEN),
                 (rs, i) -> new ResumenPuntos(rs.getInt("racha"), rs.getLong("hoy"), rs.getLong("semana"), rs.getLong("total")),
                 ts(inicioHoy), ts(inicioSemana), usuarioId);
         return r.isEmpty() ? new ResumenPuntos(0, 0, 0, 0) : r.get(0);

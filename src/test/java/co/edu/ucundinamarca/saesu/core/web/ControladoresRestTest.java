@@ -261,6 +261,28 @@ class ControladoresRestTest {
         }
 
         @Test
+        @DisplayName("Reto del día: consultar, responder y 409 si ya respondió")
+        void retoDelDia() throws Exception {
+            co.edu.ucundinamarca.saesu.practica.application.service.RetoDiarioService reto =
+                    mock(co.edu.ucundinamarca.saesu.practica.application.service.RetoDiarioService.class);
+            MockMvc mvc = mvc(new co.edu.ucundinamarca.saesu.practica.adapters.input.rest.RetoDiarioController(reto));
+            var respuesta = new co.edu.ucundinamarca.saesu.practica.application.dto.response.RetoDiarioResponse(
+                    java.time.LocalDate.of(2026, 11, 8), "pendiente", null, null, null, null, 30);
+            when(reto.hoy(LAURA)).thenReturn(respuesta);
+            mvc.perform(get("/api/practica/reto").principal(AUTH))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.estado").value("pendiente"))
+                    .andExpect(jsonPath("$.puntos").value(30));
+
+            when(reto.responder(LAURA, 300L)).thenThrow(new co.edu.ucundinamarca.saesu.practica.domain.exception.RetoYaRespondidoException());
+            mvc.perform(post("/api/practica/reto/responder").principal(AUTH).contentType(MediaType.APPLICATION_JSON).content("{\"opcionId\":300}"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.message").value("Ya respondiste el reto de hoy. Vuelve mañana por otro."));
+            mvc.perform(post("/api/practica/reto/responder").principal(AUTH).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
         @DisplayName("Chat: límite diario superado responde 429; historial y borrado usan el usuario del JWT")
         void chat() throws Exception {
             MockMvc mvc = mvc(new ChatController(enviar, chat, usuarios));

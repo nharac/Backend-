@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RankingJdbcAdapterTest {
 
     private final JdbcFalso jdbc = new JdbcFalso();
-    private final RankingJdbcAdapter adapter = new RankingJdbcAdapter(jdbc);
+    private final RankingJdbcAdapter adapter = new RankingJdbcAdapter(jdbc, co.edu.ucundinamarca.saesu.core.config.TiempoConfig.ZONA_POR_DEFECTO);
 
     @Test
     void topDesdeElInicioCuandoNoHayFecha() {

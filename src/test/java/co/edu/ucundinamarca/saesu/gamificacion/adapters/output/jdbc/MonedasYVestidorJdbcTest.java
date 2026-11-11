@@ -51,20 +51,20 @@ class MonedasYVestidorJdbcTest {
                 .filas("SELECT id, rol FROM usuarios", List.of(fila("id", 4L, "rol", "ESTUDIANTE")))
                 .filas("FROM sumi_catalogo", List.of(fila("precio", 40)))
                 .filas("FROM sumi_inventario", List.of(fila("categoria", "sombrero", "prenda", "gorra")))
-                .filas("FROM sumi_estilo", List.of(fila("sombrero", "gorra", "cara", "ninguno", "objeto", "cafe",
+                .filas("FROM sumi_estilo", List.of(fila("sombrero", "gorra", "cara", "ninguno", "ropa", "toga-azul", "objeto", "cafe",
                         "espalda", "ninguno", "bufanda", "saesu", "fondo", "playa")));
         VestidorJdbcAdapter adapter = new VestidorJdbcAdapter(jdbc);
 
         assertThat(adapter.usuario("Ana@U.edu.co")).isEqualTo(new UsuarioBasico(4L, "ESTUDIANTE"));
         assertThat(adapter.precio("sombrero", "gorra")).isEqualTo(40);
         assertThat(adapter.inventario(4L)).containsExactly("sombrero:gorra");
-        assertThat(adapter.estilo(4L)).containsEntry("fondo", "playa").containsEntry("objeto", "cafe");
+        assertThat(adapter.estilo(4L)).containsEntry("fondo", "playa").containsEntry("objeto", "cafe").containsEntry("ropa", "toga-azul");
 
         assertThat(adapter.agregar(4L, "sombrero", "corona")).isTrue();
         assertThat(jdbc.actualizaciones.get(0).sql()).contains("ON CONFLICT DO NOTHING");
-        adapter.guardarEstilo(4L, Map.of("sombrero", "gorra", "cara", "sol", "objeto", "pc",
+        adapter.guardarEstilo(4L, Map.of("sombrero", "gorra", "cara", "sol", "ropa", "smoking-rojo", "objeto", "pc",
                 "espalda", "capa", "bufanda", "oro", "fondo", "playa"));
-        assertThat(jdbc.actualizaciones.get(1).args()).containsExactly(4L, "gorra", "sol", "pc", "capa", "oro", "playa");
+        assertThat(jdbc.actualizaciones.get(1).args()).containsExactly(4L, "gorra", "sol", "smoking-rojo", "pc", "capa", "oro", "playa");
     }
 
     @Test

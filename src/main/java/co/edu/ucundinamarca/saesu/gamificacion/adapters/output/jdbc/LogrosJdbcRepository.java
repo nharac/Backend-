@@ -2,9 +2,11 @@ package co.edu.ucundinamarca.saesu.gamificacion.adapters.output.jdbc;
 
 import co.edu.ucundinamarca.saesu.gamificacion.domain.model.Cifra;
 import co.edu.ucundinamarca.saesu.gamificacion.ports.output.LogrosPort;
+import co.edu.ucundinamarca.saesu.core.config.TiempoConfig;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.ZoneId;
 import java.time.OffsetDateTime;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -38,7 +40,7 @@ public class LogrosJdbcRepository implements LogrosPort {
             WITH u AS (SELECT CAST(? AS BIGINT) AS id),
             r AS (
                 SELECT re.pregunta_id, re.es_correcta, re.fecha_intento, re.id,
-                       re.fecha_intento AT TIME ZONE 'America/Bogota' AS local
+                       re.fecha_intento AT TIME ZONE {zona} AS local
                 FROM respuestas_estudiante re WHERE re.usuario_id = (SELECT id FROM u)
             )
             SELECT
@@ -77,8 +79,16 @@ public class LogrosJdbcRepository implements LogrosPort {
 
     private final JdbcTemplate jdbc;
 
-    public LogrosJdbcRepository(JdbcTemplate jdbc) {
+    /** Zona del negocio para cortar los días (SAESU_ZONA_HORARIA). */
+    private final ZoneId zona;
+
+    public LogrosJdbcRepository(JdbcTemplate jdbc, ZoneId zona) {
         this.jdbc = jdbc;
+        this.zona = zona;
+    }
+
+    private String sql(String plantilla) {
+        return TiempoConfig.conZona(plantilla, zona);
     }
 
     @Override
@@ -99,7 +109,7 @@ public class LogrosJdbcRepository implements LogrosPort {
 
         Map<Cifra, Long> cifras = new EnumMap<>(Cifra.class);
         String[] correo = {null};
-        jdbc.query(CIFRAS, rs -> {
+        jdbc.query(sql(CIFRAS), rs -> {
             for (Cifra c : CIFRAS_SQL) {
                 cifras.put(c, rs.getLong(c.name().toLowerCase(Locale.ROOT)));
             }

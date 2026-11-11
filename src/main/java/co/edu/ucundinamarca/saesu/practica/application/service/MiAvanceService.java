@@ -10,7 +10,6 @@ import co.edu.ucundinamarca.saesu.practica.ports.input.MiAvanceUseCase;
 import co.edu.ucundinamarca.saesu.practica.ports.output.MiAvancePort;
 import co.edu.ucundinamarca.saesu.usuario.domain.exception.UsuarioNoEncontradoException;
 import co.edu.ucundinamarca.saesu.usuario.ports.output.UsuarioRepositoryPort;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +32,6 @@ import java.util.Map;
 @Service
 public class MiAvanceService implements MiAvanceUseCase {
 
-    static final ZoneId COLOMBIA = ZoneId.of("America/Bogota");
     static final int DIAS_MIN = 7;
     static final int DIAS_MAX = 371;
     /** Con menos respuestas que esto, un tema y dificultad todavía no dice nada. */
@@ -52,17 +50,14 @@ public class MiAvanceService implements MiAvanceUseCase {
     private final MiAvancePort port;
     private final UsuarioRepositoryPort usuarios;
     private final Clock clock;
+    /** Zona del negocio para saber qué día es (SAESU_ZONA_HORARIA). */
+    private final ZoneId zona;
 
-    @Autowired
-    public MiAvanceService(MiAvancePort port, UsuarioRepositoryPort usuarios) {
-        this(port, usuarios, Clock.system(COLOMBIA));
-    }
-
-    /** Constructor para pruebas (reloj fijo). */
-    MiAvanceService(MiAvancePort port, UsuarioRepositoryPort usuarios, Clock clock) {
+    public MiAvanceService(MiAvancePort port, UsuarioRepositoryPort usuarios, Clock clock, ZoneId zona) {
         this.port = port;
         this.usuarios = usuarios;
         this.clock = clock;
+        this.zona = zona;
     }
 
     // ============================================
@@ -233,7 +228,7 @@ public class MiAvanceService implements MiAvanceUseCase {
     // ============================================
 
     private LocalDate hoy() {
-        return LocalDate.now(clock.withZone(COLOMBIA));
+        return LocalDate.now(clock.withZone(zona));
     }
 
     private Long idDe(String correo) {
