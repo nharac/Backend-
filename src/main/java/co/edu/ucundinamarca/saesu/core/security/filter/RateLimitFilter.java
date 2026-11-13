@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -21,6 +23,8 @@ import java.time.Duration;
  * Limita peticiones por IP del cliente.
  * - Login y registro: 10 por minuto (frena ataques de fuerza bruta).
  * - Resto de la API: 120 por minuto (una página hace varias peticiones a la vez).
+ * Los dos límites salen de la configuración (SAESU_RATE_LIMIT_AUTH y SAESU_RATE_LIMIT_API, factor III
+ * de 12-Factor): en producción quedan en 10 y 120; solo se suben durante las pruebas de carga.
  *
  * Detrás de nginx todas las peticiones llegan desde la IP del contenedor, por eso se usa
  * la cabecera X-Real-IP / X-Forwarded-For, pero SOLO si la petición viene de una red
@@ -31,8 +35,24 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);
 
-    private static final int LIMITE_AUTH = 10;
-    private static final int LIMITE_API = 120;
+    static final int LIMITE_AUTH_POR_DEFECTO = 10;
+    static final int LIMITE_API_POR_DEFECTO = 120;
+
+    private final int limiteAuth;
+    private final int limiteApi;
+
+    /** Límites por defecto (los de producción). */
+    public RateLimitFilter() {
+        this(LIMITE_AUTH_POR_DEFECTO, LIMITE_API_POR_DEFECTO);
+    }
+
+    @Autowired
+    public RateLimitFilter(@Value("${saesu.rate-limit.auth:10}") int limiteAuth,
+                           @Value("${saesu.rate-limit.api:120}") int limiteApi) {
+        this.limiteAuth = limiteAuth;
+        this.limiteApi = limiteApi;
+        log.info("Límite de peticiones por minuto: autenticación={}, API={}", limiteAuth, limiteApi);
+    }
 
     // Los baldes expiran solos si la IP deja de usar la API (antes el mapa crecía sin límite)
     private final Cache<String, Bucket> baldes = Caffeine.newBuilder()
@@ -63,7 +83,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String uri = request.getRequestURI();
         boolean esAuth = RUTAS_AUTH.contains(uri);
         String clave = (esAuth ? "auth:" : "api:") + ipCliente(request);
-        Bucket balde = baldes.get(clave, k -> nuevoBalde(esAuth ? LIMITE_AUTH : LIMITE_API));
+        Bucket balde = baldes.get(clave, k -> nuevoBalde(esAuth ? limiteAuth : limiteApi));
 
         if (balde.tryConsume(1)) {
             filterChain.doFilter(request, response);

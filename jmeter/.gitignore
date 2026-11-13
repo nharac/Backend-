@@ -1,0 +1,5 @@
+# Cuentas reales y resultados de las pruebas: no van a git
+usuarios.csv
+resultados/
+*.jtl
+jmeter.log
