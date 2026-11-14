@@ -13,6 +13,9 @@ services:
       # Los logs sobreviven a reconstruir el contenedor: quedan en ./logs del servidor
       - ./logs:/app/logs
     restart: unless-stopped
+    # Tope de memoria del contenedor: si Java se pasa, Docker reinicia solo este
+    # contenedor en vez de dejar sin memoria a todo el servidor.
+    mem_limit: 700m
     networks:
       - saesu-network
 
