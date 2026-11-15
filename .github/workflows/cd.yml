@@ -48,16 +48,6 @@ jobs:
             docker compose up -d --build
             docker image prune -f
             # En la t3.micro Spring Boot tarda de 30 s a 2 min en arrancar: se reintenta hasta 4 minutos.
-            # /actuator/health exige sesión (403): cualquier respuesta HTTP 200/401/403 significa
-            # que Spring Boot ya está atendiendo; 000 es que todavía no abre el puerto.
-            for i in $(seq 1 48); do
-              codigo=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true)
-              case "$codigo" in
-                200|401|403) echo "Backend arriba (HTTP $codigo)"; exit 0 ;;
-              esac
-              echo "Esperando a que arranque el backend ($i/48, HTTP $codigo)..."
-              sleep 5
-            done
-            echo "El backend no respondió en 4 minutos"
-            docker logs --tail 40 saesu-backend
-            exit 1
+            # /actuator/health exige sesión (403): 200/401/403 = Spring Boot ya atiende; 000 = aún no abre el puerto.
+            # Va en una sola línea porque ssh-action (script_stop) agrega código al final de cada línea.
+            for i in $(seq 1 48); do c=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true); if [ "$c" = 200 ] || [ "$c" = 401 ] || [ "$c" = 403 ]; then echo "Backend arriba (HTTP $c)"; exit 0; fi; echo "Esperando a que arranque el backend ($i/48, HTTP $c)..."; sleep 5; done; echo "El backend no respondió en 4 minutos"; docker logs --tail 40 saesu-backend; exit 1
