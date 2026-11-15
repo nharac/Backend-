@@ -15,15 +15,29 @@ import java.util.Set;
 @Component
 public class VestidorJdbcAdapter implements VestidorPort {
 
-    /** Columnas de sumi_estilo, en orden (vienen del enum ParteSumi, nunca de datos del usuario). */
-    public static final List<String> PARTES = ParteSumi.ids();
-    private static final String COLUMNAS = String.join(", ", PARTES);
-    private static final String SQL_ESTILO = "SELECT " + COLUMNAS + " FROM sumi_estilo WHERE usuario_id = ?";
-    private static final String SQL_GUARDAR_ESTILO = "INSERT INTO sumi_estilo (usuario_id, " + COLUMNAS + ", actualizado) VALUES (?, "
-            + String.join(", ", java.util.Collections.nCopies(PARTES.size(), "?")) + ", NOW()) "
-            + "ON CONFLICT (usuario_id) DO UPDATE SET "
-            + PARTES.stream().map(c -> c + " = EXCLUDED." + c).collect(java.util.stream.Collectors.joining(", "))
-            + ", actualizado = NOW()";
+    /** Columnas de sumi_estilo, en el mismo orden que el enum ParteSumi. */
+    public static final List<String> PARTES = List.of("sombrero", "cara", "ropa", "objeto", "espalda", "bufanda", "fondo");
+
+    // Las consultas son texto fijo (nada de armar SQL concatenando): así no hay forma de inyectar SQL.
+    private static final String SQL_ESTILO = """
+            SELECT sombrero, cara, ropa, objeto, espalda, bufanda, fondo
+            FROM sumi_estilo WHERE usuario_id = ?
+            """;
+    private static final String SQL_GUARDAR_ESTILO = """
+            INSERT INTO sumi_estilo (usuario_id, sombrero, cara, ropa, objeto, espalda, bufanda, fondo, actualizado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ON CONFLICT (usuario_id) DO UPDATE SET
+                sombrero = EXCLUDED.sombrero, cara = EXCLUDED.cara, ropa = EXCLUDED.ropa, objeto = EXCLUDED.objeto,
+                espalda = EXCLUDED.espalda, bufanda = EXCLUDED.bufanda, fondo = EXCLUDED.fondo, actualizado = NOW()
+            """;
+
+    static {
+        // ParteSumi sigue siendo la única lista de partes: si alguien agrega una parte y olvida
+        // ponerla aquí (y en la migración), el backend no arranca en vez de guardar mal los datos.
+        if (!PARTES.equals(ParteSumi.ids())) {
+            throw new IllegalStateException("Las columnas de sumi_estilo no coinciden con ParteSumi: " + ParteSumi.ids());
+        }
+    }
 
     private final JdbcTemplate jdbc;
 

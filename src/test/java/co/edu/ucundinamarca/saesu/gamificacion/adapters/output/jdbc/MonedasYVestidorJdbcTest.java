@@ -68,6 +68,13 @@ class MonedasYVestidorJdbcTest {
     }
 
     @Test
+    void lasColumnasDelEstiloSonLasPartesDeSumi() {
+        // Las consultas de sumi_estilo son texto fijo; esta lista debe seguir al enum
+        assertThat(VestidorJdbcAdapter.PARTES)
+                .containsExactlyElementsOf(co.edu.ucundinamarca.saesu.gamificacion.domain.model.ParteSumi.ids());
+    }
+
+    @Test
     void vestidorVacio() {
         VestidorJdbcAdapter adapter = new VestidorJdbcAdapter(new JdbcFalso());
         assertThat(adapter.usuario("nadie@u.edu.co")).isNull();

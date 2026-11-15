@@ -93,6 +93,9 @@ public class LogrosService implements LogrosUseCase {
 
     private List<LogroResponse> evaluar(Long usuarioId, Map<String, OffsetDateTime> yaTiene, Estadisticas e) {
         List<LogroResponse> nuevos = new ArrayList<>();
+        if (e == null) {
+            return nuevos; // sin cifras no hay nada que evaluar
+        }
         int tiene = ganablesQueTiene(yaTiene);
         for (Logro logro : Logro.values()) {
             if (!yaTiene.containsKey(logro.name()) && cumple(logro, e, tiene)
@@ -180,8 +183,13 @@ public class LogrosService implements LogrosUseCase {
      */
     private LogroResponse aRespuesta(Logro l, Estadisticas e, int logrosQueTiene, OffsetDateTime fecha) {
         boolean obtenido = fecha != null;
-        long meta = Math.max(meta(l, e), 1);
-        long progreso = obtenido || e == null ? meta : Math.min(valor(l.getCifra(), e, logrosQueTiene), meta);
+        long metaCalculada = meta(l, e);
+        long meta = metaCalculada > 0 ? metaCalculada : 1; // nunca 0 para que la barra de avance no divida entre 0
+        long progreso = meta;
+        if (!obtenido && e != null) {
+            long actual = valor(l.getCifra(), e, logrosQueTiene);
+            progreso = actual < meta ? actual : meta; // el avance no pasa de la meta
+        }
         boolean oculto = l.esSecreto() && !obtenido;
         return LogroResponse.builder()
                 .codigo(l.name())
