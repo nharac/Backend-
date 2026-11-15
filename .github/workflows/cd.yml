@@ -47,5 +47,12 @@ jobs:
             git reset --hard origin/main
             docker compose up -d --build
             docker image prune -f
-            sleep 20
-            curl -fsS http://localhost:8080/actuator/health
+            # En la t3.micro Spring Boot tarda ~30 s en arrancar: se reintenta hasta 2 minutos
+            for i in $(seq 1 24); do
+              if curl -fsS http://localhost:8080/actuator/health; then exit 0; fi
+              echo "Esperando a que arranque el backend ($i/24)..."
+              sleep 5
+            done
+            echo "El backend no respondió en 2 minutos"
+            docker logs --tail 40 saesu-backend
+            exit 1
