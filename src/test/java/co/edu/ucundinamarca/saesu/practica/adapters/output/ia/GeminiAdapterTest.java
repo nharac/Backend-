@@ -132,4 +132,42 @@ class GeminiAdapterTest {
                 .isInstanceOf(IaNoDisponibleException.class).hasMessageContaining("3 intentos");
         assertThat(peticiones).hasSize(3);
     }
+
+    @Test
+    void siElModeloPrincipalNoRespondeUsaElModeloDeRespaldo() {
+        List<String> urls = new ArrayList<>();
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(req -> {
+            urls.add(req.url().toString());
+            if (req.url().toString().contains("/gemini-lento:")) {
+                return Mono.never();
+            }
+            return Mono.just(ClientResponse.create(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .body("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Respuesta de respaldo\"}]}}]}")
+                    .build());
+        });
+        GeminiAdapter a = new GeminiAdapter(builder, new ObjectMapper());
+        ReflectionTestUtils.setField(a, "apiKey", "clave-prueba");
+        ReflectionTestUtils.setField(a, "modelo", "gemini-lento");
+        ReflectionTestUtils.setField(a, "modeloRespaldo", "gemini-rapido");
+        ReflectionTestUtils.setField(a, "baseUrl", "https://gemini.test/v1beta/models");
+        ReflectionTestUtils.setField(a, "timeoutSegundos", 1L);
+
+        assertThat(a.generarRespuesta("s", "", "m")).isEqualTo("Respuesta de respaldo");
+        assertThat(urls).hasSize(2);
+        assertThat(urls.get(1)).contains("/gemini-rapido:generateContent");
+    }
+
+    @Test
+    void siElRespaldoTambienFallaAvisaAlEstudiante() {
+        responder(HttpStatus.NOT_FOUND, "{}");
+        responder(HttpStatus.NOT_FOUND, "{}");
+        GeminiAdapter a = adapter();
+        ReflectionTestUtils.setField(a, "modeloRespaldo", "gemini-respaldo");
+
+        assertThatThrownBy(() -> a.generarRespuesta("s", "", "m"))
+                .isInstanceOf(IaNoDisponibleException.class).hasMessageContaining("modelo");
+        assertThat(peticiones).hasSize(2);
+        assertThat(peticiones.get(1).url().toString()).contains("/gemini-respaldo:");
+    }
 }

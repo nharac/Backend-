@@ -23,6 +23,10 @@ import java.util.Map;
  * Adaptador que implementa IaServicePort usando la API de Google Gemini.
  * Con reintentos automáticos si Gemini devuelve 503 (sobrecarga) o 429 (cuota temporal).
  *
+ * Si el modelo principal falla (no responde a tiempo, está saturado o no existe), se intenta una
+ * vez con un modelo de respaldo más rápido ({@code gemini.model-respaldo}), así el tutor sigue
+ * respondiendo aunque el modelo principal tenga problemas.
+ *
  * Las reglas del tutor se envían en "systemInstruction" (separadas del mensaje del
  * estudiante) y la respuesta se arma uniendo todas las partes de texto que devuelve Gemini.
  */
@@ -49,6 +53,14 @@ public class GeminiAdapter implements IaServicePort {
     @Value("${gemini.model:gemini-3.8-flash}")
     private String modelo;
 
+    /** Modelo que se usa si el principal falla. Vacío = sin respaldo. */
+    @Value("${gemini.model-respaldo:}")
+    private String modeloRespaldo;
+
+    /** Tiempo máximo de espera del modelo de respaldo. */
+    @Value("${gemini.timeout-respaldo-segundos:40}")
+    private long timeoutRespaldoSegundos = 40;
+
     @Value("${gemini.api.url}")
     private String baseUrl;
 
@@ -67,13 +79,28 @@ public class GeminiAdapter implements IaServicePort {
     @Override
     public String generarRespuesta(String systemPrompt, String historial, String mensajeNuevo) {
         String conversacion = construirConversacion(historial, mensajeNuevo);
+        try {
+            return conModelo(modelo, timeoutSegundos, systemPrompt, conversacion);
+        } catch (IaNoDisponibleException e) {
+            if (!hayRespaldo()) {
+                throw e;
+            }
+            log.warn("El modelo {} falló ({}). Se usa el modelo de respaldo {}", modelo, e.getMessage(), modeloRespaldo);
+            return conModelo(modeloRespaldo, timeoutRespaldoSegundos, systemPrompt, conversacion);
+        }
+    }
 
+    private boolean hayRespaldo() {
+        return modeloRespaldo != null && !modeloRespaldo.isBlank() && !modeloRespaldo.equals(modelo);
+    }
+
+    private String conModelo(String modeloUsado, long timeout, String systemPrompt, String conversacion) {
         Exception ultimaExcepcion = null;
 
         for (int intento = 1; intento <= MAX_REINTENTOS; intento++) {
             try {
-                log.debug("Intento {}/{} de llamar a Gemini", intento, MAX_REINTENTOS);
-                return llamarGemini(systemPrompt, conversacion);
+                log.debug("Intento {}/{} de llamar a Gemini ({})", intento, MAX_REINTENTOS, modeloUsado);
+                return llamarGemini(modeloUsado, timeout, systemPrompt, conversacion);
 
             } catch (WebClientResponseException e) {
                 int status = e.getStatusCode().value();
@@ -103,7 +130,7 @@ public class GeminiAdapter implements IaServicePort {
             } catch (Exception e) {
                 // Si ya esperamos el tiempo completo, reintentar solo haría esperar más al estudiante
                 if (Exceptions.unwrap(e) instanceof TimeoutException) {
-                    log.warn("Gemini no respondió en {} s", timeoutSegundos);
+                    log.warn("Gemini ({}) no respondió en {} s", modeloUsado, timeout);
                     throw new IaNoDisponibleException(
                             "El tutor se tardó demasiado en responder. Intenta de nuevo o haz una pregunta más corta.", e);
                 }
@@ -121,7 +148,7 @@ public class GeminiAdapter implements IaServicePort {
                 ultimaExcepcion);
     }
 
-    private String llamarGemini(String systemPrompt, String conversacion) {
+    private String llamarGemini(String modeloUsado, long timeout, String systemPrompt, String conversacion) {
         Map<String, Object> body = Map.of(
                 // Reglas del tutor: van aparte para que el modelo no las "continúe" como texto
                 "systemInstruction", Map.of(
@@ -140,7 +167,7 @@ public class GeminiAdapter implements IaServicePort {
                 )
         );
 
-        String url = baseUrl + "/" + modelo + ":generateContent?key=" + apiKey;
+        String url = baseUrl + "/" + modeloUsado + ":generateContent?key=" + apiKey;
 
         String respuestaJson = webClient.post()
                 .uri(url)
@@ -148,7 +175,7 @@ public class GeminiAdapter implements IaServicePort {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(timeoutSegundos))
+                .timeout(Duration.ofSeconds(timeout))
                 .block();
 
         if (respuestaJson == null || respuestaJson.isBlank()) {
