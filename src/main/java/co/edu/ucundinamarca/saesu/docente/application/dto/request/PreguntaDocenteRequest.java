@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.docente.application.dto.request;
 
+import co.edu.ucundinamarca.saesu.practica.domain.valueobject.Tema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,7 +16,8 @@ import java.util.List;
 public record PreguntaDocenteRequest(
 
         @NotBlank(message = "El tema es obligatorio")
-        @Pattern(regexp = "limites|derivadas|integrales", message = "El tema debe ser: limites, derivadas o integrales")
+        @Pattern(regexp = Tema.PATRON,
+                message = "El tema debe ser: fundamentos, algebra, trigonometria, limites, derivadas o integrales")
         String tema,
 
         @NotBlank(message = "El enunciado es obligatorio")

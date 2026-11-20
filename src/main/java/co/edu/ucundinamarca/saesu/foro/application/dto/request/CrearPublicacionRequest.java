@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.foro.application.dto.request;
 
+import co.edu.ucundinamarca.saesu.practica.domain.valueobject.Tema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -27,8 +28,8 @@ public class CrearPublicacionRequest {
 
     @NotBlank(message = "El tema es obligatorio")
     @Pattern(
-            regexp = "limites|derivadas|integrales",
-            message = "El tema debe ser: limites, derivadas o integrales"
+            regexp = Tema.PATRON,
+            message = "El tema debe ser: fundamentos, algebra, trigonometria, limites, derivadas o integrales"
     )
     private String tema;
     private String imagenUrl;

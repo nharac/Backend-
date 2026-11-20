@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.docente.adapters.output.excel;
 
+import co.edu.ucundinamarca.saesu.practica.domain.valueobject.Tema;
 import co.edu.ucundinamarca.saesu.core.excel.LibroExcel;
 import co.edu.ucundinamarca.saesu.core.excel.LibroExcel.Celda;
 import co.edu.ucundinamarca.saesu.core.excel.LibroExcel.Estilo;
@@ -16,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Reporte de estudiantes en Excel (.xlsx) con formato: encabezado fijo, filtros,
@@ -25,9 +25,7 @@ import java.util.Map;
 @Component
 public class ReporteEstudiantesExcelAdapter implements ReporteEstudiantesPort {
 
-    private static final List<String> TEMAS = List.of("limites", "derivadas", "integrales");
-    private static final Map<String, String> NOMBRE_TEMA = Map.of(
-            "limites", "Límites", "derivadas", "Derivadas", "integrales", "Integrales");
+    private static final List<String> TEMAS = Tema.valores();
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' h:mm a", Locale.forLanguageTag("es-CO"));
     private static final String[] ENCABEZADOS = {
             "Estudiante", "Correo", "Puntos", "Racha (días)", "Intentos", "Aciertos",
@@ -119,7 +117,7 @@ public class ReporteEstudiantesExcelAdapter implements ReporteEstudiantesPort {
         h.fila(28.0, Celda.texto("Tema", Estilo.ENCABEZADO), Celda.texto("Respuestas", Estilo.ENCABEZADO),
                 Celda.texto("Aciertos", Estilo.ENCABEZADO), Celda.texto("Estudiantes que lo practican", Estilo.ENCABEZADO));
         for (EstadisticasGrupoResponse.TemaEstadistica t : g.porTema()) {
-            h.fila(22.0, Celda.texto(NOMBRE_TEMA.getOrDefault(t.tema(), t.tema()), Estilo.TEXTO),
+            h.fila(22.0, Celda.texto(Tema.nombreDe(t.tema()), Estilo.TEXTO),
                     Celda.numero(t.intentos(), Estilo.ENTERO),
                     t.intentos() == 0 ? Celda.texto("—", Estilo.VACIO) : porcentaje(t.porcentaje()),
                     Celda.numero(t.estudiantes(), Estilo.ENTERO));
@@ -131,7 +129,7 @@ public class ReporteEstudiantesExcelAdapter implements ReporteEstudiantesPort {
                     Celda.texto("Fallan", Estilo.ENCABEZADO), Celda.texto("Respuesta equivocada más común", Estilo.ENCABEZADO));
             for (EstadisticasGrupoResponse.PreguntaDificil p : g.preguntasDificiles()) {
                 h.fila(30.0, Celda.texto(p.enunciado(), Estilo.TEXTO_SUAVE),
-                        Celda.texto(NOMBRE_TEMA.getOrDefault(p.tema(), p.tema()), Estilo.TEXTO),
+                        Celda.texto(Tema.nombreDe(p.tema()), Estilo.TEXTO),
                         porcentajeInverso(p.porcentajeFallo()),
                         Celda.texto(p.errorFrecuente() == null ? "—" : p.errorFrecuente(), Estilo.TEXTO));
             }

@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.docente.application.service;
 
+import co.edu.ucundinamarca.saesu.practica.domain.valueobject.Tema;
 import co.edu.ucundinamarca.saesu.docente.application.dto.response.EstadisticasGrupoResponse;
 import co.edu.ucundinamarca.saesu.docente.application.dto.response.EstadisticasGrupoResponse.TemaEstadistica;
 import co.edu.ucundinamarca.saesu.docente.application.dto.response.EstudianteDetalleResponse;
@@ -42,9 +43,7 @@ public class EstadisticasDocenteService {
     static final int MIN_INTENTOS = 5;
     static final double PORCENTAJE_MINIMO = 50.0;
 
-    static final List<String> TEMAS = List.of("limites", "derivadas", "integrales");
-    private static final Map<String, String> NOMBRE_TEMA = Map.of(
-            "limites", "Límites", "derivadas", "Derivadas", "integrales", "Integrales");
+    static final List<String> TEMAS = Tema.valores();
 
     private final EstadisticasDocentePort port;
     private final Clock clock;
@@ -196,7 +195,7 @@ public class EstadisticasDocenteService {
         StringBuilder sb = new StringBuilder("﻿");
         List<String> encabezados = new ArrayList<>(List.of(
                 "Nombre", "Correo", "Puntos", "Racha (días)", "Intentos", "Aciertos (%)"));
-        TEMAS.forEach(t -> encabezados.add(NOMBRE_TEMA.get(t) + " (%)"));
+        TEMAS.forEach(t -> encabezados.add(Tema.nombreDe(t) + " (%)"));
         encabezados.addAll(List.of("Última actividad", "Estado", "Motivo"));
         sb.append(String.join(";", encabezados)).append("\r\n");
 

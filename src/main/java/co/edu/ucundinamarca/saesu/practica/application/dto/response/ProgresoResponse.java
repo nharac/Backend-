@@ -13,6 +13,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProgresoResponse {
+    private ProgresoTema fundamentos;
+    private ProgresoTema algebra;
+    private ProgresoTema trigonometria;
     private ProgresoTema limites;
     private ProgresoTema derivadas;
     private ProgresoTema integrales;

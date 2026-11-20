@@ -95,13 +95,13 @@ class QuizServiceTest {
     }
 
     @Test
-    @DisplayName("Iniciar: 'mixto' o vacío usan los tres temas; un tema desconocido es 400")
+    @DisplayName("Iniciar: 'mixto' o vacío usan todos los temas; un tema desconocido es 400")
     void temas() {
         when(port.preguntasAlAzar(isNull(), anyInt())).thenReturn(List.of(pregunta(1, "A")));
         when(port.crearIntento(any(), isNull(), any(), any(), anyList())).thenReturn(8L);
 
         assertThat(service.iniciar(CORREO, new IniciarQuizRequest("mixto", 10)).tema()).isNull();
-        assertThatThrownBy(() -> service.iniciar(CORREO, new IniciarQuizRequest("algebra", 10)))
+        assertThatThrownBy(() -> service.iniciar(CORREO, new IniciarQuizRequest("geometria", 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

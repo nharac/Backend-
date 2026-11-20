@@ -171,12 +171,12 @@ public class EstadisticasDocenteJdbcAdapter implements EstadisticasDocentePort {
                        COUNT(r.id) FILTER (WHERE r.es_correcta) AS correctas,
                        COUNT(DISTINCT r.usuario_id) AS estudiantes,
                        (SELECT COUNT(*) FROM preguntas p2 WHERE p2.tema = t.tema AND p2.activa) AS activas
-                FROM (VALUES ('limites'), ('derivadas'), ('integrales')) AS t(tema)
+                FROM (VALUES ('fundamentos'), ('algebra'), ('trigonometria'), ('limites'), ('derivadas'), ('integrales')) AS t(tema)
                 LEFT JOIN preguntas p ON p.tema = t.tema
                 LEFT JOIN respuestas_estudiante r ON r.pregunta_id = p.id
                      AND r.usuario_id IN (SELECT u.id FROM usuarios u WHERE %s)
                 GROUP BY t.tema
-                ORDER BY CASE t.tema WHEN 'limites' THEN 1 WHEN 'derivadas' THEN 2 ELSE 3 END
+                ORDER BY array_position(ARRAY['fundamentos', 'algebra', 'trigonometria', 'limites', 'derivadas', 'integrales'], t.tema)
                 """.formatted(ES_ESTUDIANTE),
                 (rs, i) -> {
                     long intentos = rs.getLong("intentos");

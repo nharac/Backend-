@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.practica.application.service;
 
+import co.edu.ucundinamarca.saesu.practica.domain.valueobject.Tema;
 import co.edu.ucundinamarca.saesu.practica.application.dto.response.ActividadResponse;
 import co.edu.ucundinamarca.saesu.practica.application.dto.response.ActividadResponse.DiaActividad;
 import co.edu.ucundinamarca.saesu.practica.application.dto.response.AnalisisResponse;
@@ -42,8 +43,6 @@ public class MiAvanceService implements MiAvanceUseCase {
 
     private static final List<String> TEMAS = List.of("limites", "derivadas", "integrales");
     private static final List<String> DIFICULTADES = List.of("basico", "intermedio", "avanzado");
-    private static final Map<String, String> NOMBRE_TEMA = Map.of(
-            "limites", "Límites", "derivadas", "Derivadas", "integrales", "Integrales");
     private static final Map<String, String> NOMBRE_DIFICULTAD = Map.of(
             "basico", "básico", "intermedio", "intermedio", "avanzado", "avanzado");
 
@@ -182,7 +181,7 @@ public class MiAvanceService implements MiAvanceUseCase {
     }
 
     private static String nombre(Rendimiento r) {
-        return NOMBRE_TEMA.get(r.tema()) + " " + NOMBRE_DIFICULTAD.get(r.dificultad());
+        return Tema.nombreDe(r.tema()) + " " + NOMBRE_DIFICULTAD.get(r.dificultad());
     }
 
     private static int porcentaje(long correctas, long respondidas) {

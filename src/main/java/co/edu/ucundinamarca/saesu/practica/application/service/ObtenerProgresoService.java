@@ -28,6 +28,9 @@ public class ObtenerProgresoService implements ObtenerProgresoUseCase {
 
         List<Object[]> resultados = respuestaRepository.contarPorTema(usuarioId);
 
+        ProgresoTema fundamentos = new ProgresoTema(0, 0, 0.0);
+        ProgresoTema algebra = new ProgresoTema(0, 0, 0.0);
+        ProgresoTema trigonometria = new ProgresoTema(0, 0, 0.0);
         ProgresoTema limites = new ProgresoTema(0, 0, 0.0);
         ProgresoTema derivadas = new ProgresoTema(0, 0, 0.0);
         ProgresoTema integrales = new ProgresoTema(0, 0, 0.0);
@@ -41,12 +44,15 @@ public class ObtenerProgresoService implements ObtenerProgresoUseCase {
             ProgresoTema progreso = new ProgresoTema(respondidas, correctas, porcentaje);
 
             switch (tema) {
+                case "fundamentos" -> fundamentos = progreso;
+                case "algebra" -> algebra = progreso;
+                case "trigonometria" -> trigonometria = progreso;
                 case "limites" -> limites = progreso;
                 case "derivadas" -> derivadas = progreso;
                 case "integrales" -> integrales = progreso;
             }
         }
 
-        return new ProgresoResponse(limites, derivadas, integrales);
+        return new ProgresoResponse(fundamentos, algebra, trigonometria, limites, derivadas, integrales);
     }
 }

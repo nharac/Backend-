@@ -1,5 +1,6 @@
 package co.edu.ucundinamarca.saesu.quiz.application.service;
 
+import co.edu.ucundinamarca.saesu.practica.domain.valueobject.Tema;
 import co.edu.ucundinamarca.saesu.quiz.application.dto.request.FinalizarQuizRequest;
 import co.edu.ucundinamarca.saesu.quiz.application.dto.request.IniciarQuizRequest;
 import co.edu.ucundinamarca.saesu.quiz.application.dto.response.QuizHistorialResponse;
@@ -47,7 +48,7 @@ public class QuizService implements QuizUseCase {
     static final int SEGUNDOS_POR_PREGUNTA = 90;
     static final Duration GRACIA = Duration.ofSeconds(10);
     static final int HISTORIAL = 10;
-    static final Set<String> TEMAS = Set.of("limites", "derivadas", "integrales");
+    static final Set<String> TEMAS = Set.copyOf(Tema.valores());
 
     private final QuizRepositoryPort port;
     private final UsuarioRepositoryPort usuarios;
@@ -181,7 +182,7 @@ public class QuizService implements QuizUseCase {
         }
         String t = tema.trim().toLowerCase(Locale.ROOT);
         if (!TEMAS.contains(t)) {
-            throw new IllegalArgumentException("El tema debe ser limites, derivadas, integrales o mixto");
+            throw new IllegalArgumentException("El tema debe ser fundamentos, algebra, trigonometria, limites, derivadas, integrales o mixto");
         }
         return t;
     }

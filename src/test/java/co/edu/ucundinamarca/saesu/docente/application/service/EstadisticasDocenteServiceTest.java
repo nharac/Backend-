@@ -131,7 +131,7 @@ class EstadisticasDocenteServiceTest {
     }
 
     @Test
-    @DisplayName("La lista arma el progreso de los 3 temas aunque el estudiante no tenga intentos en alguno")
+    @DisplayName("La lista arma el progreso de todos los temas aunque el estudiante no tenga intentos en alguno")
     void listaConTemas() {
         when(port.preguntasActivasPorTema()).thenReturn(Map.of("limites", 15L, "derivadas", 15L, "integrales", 14L));
         when(port.progresoPorTema(isNull())).thenReturn(List.of(
@@ -146,10 +146,11 @@ class EstadisticasDocenteServiceTest {
         assertThat(laura.porcentaje()).isEqualTo(80.0);
         assertThat(laura.enRiesgo()).isFalse();
         assertThat(laura.porTema()).extracting(EstudianteResumenResponse.TemaProgreso::tema)
-                .containsExactly("limites", "derivadas", "integrales");
-        assertThat(laura.porTema().get(0).resueltas()).isEqualTo(7);
-        assertThat(laura.porTema().get(2).totalPreguntas()).isEqualTo(14);
-        assertThat(laura.porTema().get(1).intentos()).isZero();
+                .containsExactly("fundamentos", "algebra", "trigonometria", "limites", "derivadas", "integrales");
+        assertThat(laura.porTema().get(3).resueltas()).isEqualTo(7);
+        assertThat(laura.porTema().get(5).totalPreguntas()).isEqualTo(14);
+        assertThat(laura.porTema().get(4).intentos()).isZero();
+        assertThat(laura.porTema().get(0).totalPreguntas()).isZero();
 
         assertThat(lista.get(1).enRiesgo()).isTrue();
     }
@@ -197,8 +198,9 @@ class EstadisticasDocenteServiceTest {
 
         assertThat(csv).startsWith("﻿");
         assertThat(lineas[0]).isEqualTo("Nombre;Correo;Puntos;Racha (días);Intentos;Aciertos (%);"
+                + "Fundamentos (%);Álgebra (%);Trigonometría (%);"
                 + "Límites (%);Derivadas (%);Integrales (%);Última actividad;Estado;Motivo");
-        assertThat(lineas[1]).isEqualTo("Laura Gómez;1@u.edu.co;100;2;4;75,0;75,0;;;26/10/2026 08:00;Al día;");
+        assertThat(lineas[1]).isEqualTo("Laura Gómez;1@u.edu.co;100;2;4;75,0;;;;75,0;;;26/10/2026 08:00;Al día;");
     }
 
     @Test
