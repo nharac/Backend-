@@ -67,20 +67,15 @@ public interface PreguntaJpaRepository extends JpaRepository<PreguntaEntity, Lon
     );
 
     /**
-     * Preguntas activas cuyo último intento del estudiante fue un error (las que tiene por repasar),
-     * de la más reciente a la más antigua.
+     * Preguntas que le toca repasar hoy al estudiante (repaso espaciado, V36): primero las de caja más baja
+     * y las que llevan más tiempo esperando.
      */
     @Query(value = """
-        SELECT p.* FROM preguntas p
-        JOIN LATERAL (
-            SELECT r.es_correcta, r.fecha_intento
-            FROM respuestas_estudiante r
-            WHERE r.pregunta_id = p.id AND r.usuario_id = :usuarioId
-            ORDER BY r.fecha_intento DESC, r.id DESC
-            LIMIT 1
-        ) ultimo ON TRUE
-        WHERE p.activa AND NOT ultimo.es_correcta
-        ORDER BY ultimo.fecha_intento DESC
+        SELECT p.* FROM repaso_espaciado re
+        JOIN preguntas p ON p.id = re.pregunta_id
+        WHERE re.usuario_id = :usuarioId AND p.activa
+          AND re.proxima IS NOT NULL AND re.proxima <= (NOW() AT TIME ZONE 'America/Bogota')::date
+        ORDER BY re.caja, re.proxima, p.id
         LIMIT :size
         """, nativeQuery = true)
     List<PreguntaEntity> porRepasar(@Param("usuarioId") Long usuarioId, @Param("size") int size);

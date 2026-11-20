@@ -28,6 +28,22 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ValidarRespuestaService implements ValidarRespuestaUseCase {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ValidarRespuestaService.class);
+
+    /** Repaso espaciado (opcional: en las pruebas unitarias puede no estar). */
+    private co.edu.ucundinamarca.saesu.practica.ports.output.RepasoEspaciadoPort repasoEspaciado;
+    private java.time.Clock relojRepaso = java.time.Clock.system(java.time.ZoneId.of("America/Bogota"));
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setRepasoEspaciado(co.edu.ucundinamarca.saesu.practica.ports.output.RepasoEspaciadoPort repasoEspaciado) {
+        this.repasoEspaciado = repasoEspaciado;
+    }
+
+    /** Para pruebas: fija el "hoy" del repaso espaciado. */
+    public void setRelojRepaso(java.time.Clock reloj) {
+        this.relojRepaso = reloj;
+    }
+
     private final PreguntaRepositoryPort preguntaRepository;
     private final OpcionRepositoryPort opcionRepository;
     private final RespuestaEstudianteRepositoryPort respuestaRepository;
@@ -85,6 +101,20 @@ public class ValidarRespuestaService implements ValidarRespuestaUseCase {
                 LocalDateTime.now()
         );
         respuestaRepository.guardar(intento);
+
+        // Repaso espaciado: un error la programa para mañana; acertarla cuando tocaba la sube de caja
+        if (repasoEspaciado != null) {
+            try {
+                java.time.LocalDate hoy = java.time.LocalDate.now(relojRepaso);
+                if (esCorrecta) {
+                    repasoEspaciado.acierto(usuarioId, preguntaId, hoy);
+                } else {
+                    repasoEspaciado.fallo(usuarioId, preguntaId, hoy);
+                }
+            } catch (RuntimeException e) {
+                log.warn("No se pudo actualizar el repaso espaciado: {}", e.getMessage());
+            }
+        }
 
         // 7. Puntos: solo la primera vez que acierta la pregunta,
         //    y valen menos por cada fallo anterior (20, 15, 10, 5...)

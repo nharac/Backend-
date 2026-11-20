@@ -76,8 +76,8 @@ public class PracticaController {
 
     @Operation(
             summary = "Repaso de errores",
-            description = "Preguntas que el estudiante falló en su último intento, de la más reciente a la más antigua. "
-                    + "Al acertarlas salen de la lista. Requiere JWT."
+            description = "Repaso espaciado: preguntas que le toca repasar hoy (un error vuelve al día siguiente; "
+                    + "al acertar pasa a 3 días, luego a 7, y después queda dominada). Requiere JWT."
     )
     @GetMapping("/preguntas/repaso")
     public ResponseEntity<List<PreguntaResponse>> repaso(
