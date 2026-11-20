@@ -44,10 +44,11 @@ public class DuelosController {
         return duelos.misDuelos(auth.getName());
     }
 
-    @Operation(summary = "Retar a un compañero", description = "Se eligen 5 preguntas al azar del tema.")
+    @Operation(summary = "Retar a un compañero",
+            description = "Modos: CLASICO (5 preguntas), MUERTE_SUBITA (racha hasta el primer error, 10), PUNTOS (según dificultad, 8) y RELAMPAGO (10 en 60 s).")
     @PostMapping
     public ResponseEntity<DueloResponse> retar(@Valid @RequestBody RetarRequest r, Authentication auth) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(duelos.retar(auth.getName(), r.rivalId(), r.tema()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(duelos.retar(auth.getName(), r.rivalId(), r.tema(), r.modo()));
     }
 
     @Operation(summary = "Preguntas del reto (sin la respuesta)", description = "400 si ya lo respondí, 404 si no participo.")

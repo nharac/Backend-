@@ -7,11 +7,16 @@ import java.time.LocalDateTime;
  *
  * @param estado    POR_JUGAR (aún no respondo), ESPERANDO (respondí, falta el otro) o TERMINADO
  * @param resultado GANASTE, PERDISTE o EMPATE cuando está terminado (si no, null)
+ * @param misCorrectas puntaje según el modo (aciertos, racha o puntos)
  */
 public record DueloResponse(
         Long id,
         String tema,
         String temaNombre,
+        String modo,
+        String modoNombre,
+        int puntajeMaximo,
+        Integer limiteSegundos,
         String rival,
         boolean soyRetador,
         String estado,

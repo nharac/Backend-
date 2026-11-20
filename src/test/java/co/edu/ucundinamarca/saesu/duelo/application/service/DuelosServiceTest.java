@@ -48,7 +48,7 @@ class DuelosServiceTest {
     }
 
     private static FilaDuelo duelo(Integer cRetador, Integer sRetador, Integer cRival, Integer sRival) {
-        return new FilaDuelo(7L, "algebra", 1L, "Ana", 2L, "Beto", AHORA, 5, cRetador, sRetador, cRival, sRival);
+        return new FilaDuelo(7L, "algebra", "CLASICO", 5, 1L, "Ana", 2L, "Beto", AHORA, 5, cRetador, sRetador, cRival, sRival);
     }
 
     private static PreguntaQuiz pregunta(long id, String correcta) {
@@ -80,7 +80,7 @@ class DuelosServiceTest {
 
         when(port.esEstudiante(2L)).thenReturn(true);
         when(banco.preguntasAlAzar("algebra", 5)).thenReturn(List.of(pregunta(1, "A"), pregunta(2, "B"), pregunta(3, "A")));
-        when(port.crear(1L, 2L, "algebra", List.of(1L, 2L, 3L), AHORA)).thenReturn(7L);
+        when(port.crear(1L, 2L, "algebra", "CLASICO", 3, List.of(1L, 2L, 3L), AHORA)).thenReturn(7L);
         when(port.buscar(7L, 1L)).thenReturn(Optional.of(duelo(null, null, null, null)));
 
         assertThat(servicio.retar(ANA, 2L, "algebra").estado()).isEqualTo("POR_JUGAR");
@@ -93,7 +93,7 @@ class DuelosServiceTest {
         when(port.esEstudiante(2L)).thenReturn(true);
         when(banco.preguntasAlAzar("algebra", 5)).thenReturn(List.of(pregunta(1, "A")));
         assertThatThrownBy(() -> servicio.retar(ANA, 2L, "algebra")).isInstanceOf(IllegalArgumentException.class);
-        verify(port, never()).crear(any(), any(), any(), any(), any());
+        verify(port, never()).crear(any(), any(), any(), any(), anyInt(), any(), any());
     }
 
     @Test
@@ -135,5 +135,42 @@ class DuelosServiceTest {
         when(port.entregar(7L, 1L, 0, 5, AHORA)).thenReturn(false);
         assertThatThrownBy(() -> servicio.entregar(ANA, 7L, new EntregaDueloRequest(List.of(), 5)))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static PreguntaQuiz conDificultad(long id, String dificultad) {
+        return new PreguntaQuiz(id, "algebra", dificultad, "P" + id, null,
+                List.of(new Opcion("A", "x", true), new Opcion("B", "y", false)));
+    }
+
+    @Test
+    @DisplayName("A puntos: el máximo y el puntaje dependen de la dificultad")
+    void modoPuntos() {
+        when(port.idPorCorreo(ANA)).thenReturn(Optional.of(1L));
+        when(port.esEstudiante(2L)).thenReturn(true);
+        List<PreguntaQuiz> ps = List.of(conDificultad(1, "basico"), conDificultad(2, "intermedio"), conDificultad(3, "avanzado"));
+        when(banco.preguntasAlAzar("algebra", 8)).thenReturn(ps);
+        when(port.crear(1L, 2L, "algebra", "PUNTOS", 6, List.of(1L, 2L, 3L), AHORA)).thenReturn(7L);
+        FilaDuelo fila = new FilaDuelo(7L, "algebra", "PUNTOS", 6, 1L, "Ana", 2L, "Beto", AHORA, 3, null, null, null, null);
+        when(port.buscar(7L, 1L)).thenReturn(Optional.of(fila));
+
+        DueloResponse r = servicio.retar(ANA, 2L, "algebra", "PUNTOS");
+        assertThat(r.modoNombre()).isEqualTo("A puntos");
+        assertThat(r.puntajeMaximo()).isEqualTo(6);
+
+        when(port.preguntas(7L)).thenReturn(ps);
+        assertThat(servicio.preguntas(ANA, 7L)).extracting(p -> p.puntos()).containsExactly(1, 2, 3);
+    }
+
+    @Test
+    @DisplayName("Calificación por modo: a muerte corta en el primer error")
+    void calificarPorModo() {
+        List<PreguntaQuiz> ps = List.of(conDificultad(1, "basico"), conDificultad(2, "avanzado"), conDificultad(3, "intermedio"));
+        java.util.Map<Long, String> correctas = java.util.Map.of(1L, "A", 2L, "A", 3L, "A");
+        java.util.Map<Long, String> elegidas = java.util.Map.of(1L, "A", 2L, "B", 3L, "A");
+        assertThat(co.edu.ucundinamarca.saesu.duelo.domain.ModoDuelo.CLASICO.calificar(ps, elegidas, correctas)).isEqualTo(2);
+        assertThat(co.edu.ucundinamarca.saesu.duelo.domain.ModoDuelo.MUERTE_SUBITA.calificar(ps, elegidas, correctas)).isEqualTo(1);
+        assertThat(co.edu.ucundinamarca.saesu.duelo.domain.ModoDuelo.PUNTOS.calificar(ps, elegidas, correctas)).isEqualTo(3);
+        assertThat(co.edu.ucundinamarca.saesu.duelo.domain.ModoDuelo.RELAMPAGO.limiteSegundos()).isEqualTo(60);
+        assertThat(co.edu.ucundinamarca.saesu.duelo.domain.ModoDuelo.de(null)).isEqualTo(co.edu.ucundinamarca.saesu.duelo.domain.ModoDuelo.CLASICO);
     }
 }

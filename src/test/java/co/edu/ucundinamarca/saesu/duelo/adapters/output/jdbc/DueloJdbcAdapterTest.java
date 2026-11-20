@@ -19,7 +19,7 @@ class DueloJdbcAdapterTest {
 
     @Test
     void mapeaLosRetosConEntregasNulas() {
-        jdbc.filas("FROM duelos d", List.of(fila("id", 7L, "tema", "algebra", "retador_id", 1L, "retador", "Ana", "rival_id", 2L,
+        jdbc.filas("FROM duelos d", List.of(fila("id", 7L, "tema", "algebra", "modo", "PUNTOS", "puntaje_maximo", 12, "retador_id", 1L, "retador", "Ana", "rival_id", 2L,
                 "rival", "Beto", "creado_en", Timestamp.valueOf(LocalDateTime.of(2026, 11, 20, 8, 0)), "total", 5L,
                 "correctas_retador", 3, "segundos_retador", 40, "correctas_rival", null, "segundos_rival", null)));
 
@@ -28,13 +28,15 @@ class DueloJdbcAdapterTest {
         assertThat(d.get(0).correctasRetador()).isEqualTo(3);
         assertThat(d.get(0).correctasRival()).isNull();
         assertThat(d.get(0).totalPreguntas()).isEqualTo(5);
+        assertThat(d.get(0).modo()).isEqualTo("PUNTOS");
+        assertThat(d.get(0).puntajeMaximo()).isEqualTo(12);
         assertThat(jdbc.consultas.get(0).args()).containsExactly(1L, 1L, 30);
     }
 
     @Test
     void creaElRetoConSusPreguntasEnOrden() {
         jdbc.filas("INSERT INTO duelos", List.of(fila("id", 7L)));
-        Long id = adapter.crear(1L, 2L, "algebra", List.of(10L, 11L), LocalDateTime.of(2026, 11, 20, 8, 0));
+        Long id = adapter.crear(1L, 2L, "algebra", "CLASICO", 2, List.of(10L, 11L), LocalDateTime.of(2026, 11, 20, 8, 0));
         assertThat(id).isEqualTo(7L);
         assertThat(jdbc.lotes.get(0)).hasSize(2);
         assertThat(jdbc.lotes.get(0).get(1)).containsExactly(7L, 2, 11L);

@@ -4,6 +4,7 @@ import co.edu.ucundinamarca.saesu.duelo.application.dto.request.EntregaDueloRequ
 import co.edu.ucundinamarca.saesu.duelo.application.dto.response.CompaneroResponse;
 import co.edu.ucundinamarca.saesu.duelo.application.dto.response.DueloResponse;
 import co.edu.ucundinamarca.saesu.duelo.application.dto.response.PreguntaDueloResponse;
+import co.edu.ucundinamarca.saesu.duelo.domain.ModoDuelo;
 import co.edu.ucundinamarca.saesu.duelo.domain.exception.DueloNoEncontradoException;
 import co.edu.ucundinamarca.saesu.duelo.ports.output.DueloPort;
 import co.edu.ucundinamarca.saesu.duelo.ports.output.DueloPort.FilaDuelo;
@@ -20,13 +21,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Retos entre compañeros: el retador elige rival y tema, los dos responden las mismas
- * {@value #PREGUNTAS} preguntas y gana quien acierte más (si empatan, quien tarde menos).
+ * Retos entre compañeros: el retador elige rival, tema y modo ({@link ModoDuelo}); los dos responden
+ * las mismas preguntas y gana quien tenga más puntaje (si empatan, quien tarde menos).
  */
 @Service
 public class DuelosService {
 
-    static final int PREGUNTAS = 5;
     static final int MIN_PREGUNTAS = 3;
     static final int HISTORIAL = 30;
 
@@ -49,12 +49,18 @@ public class DuelosService {
     }
 
     public DueloResponse retar(String correo, Long rivalId, String tema) {
+        return retar(correo, rivalId, tema, null);
+    }
+
+    public DueloResponse retar(String correo, Long rivalId, String tema, String modoTexto) {
+        ModoDuelo modo = ModoDuelo.de(modoTexto);
         Long yo = idDe(correo);
         if (yo.equals(rivalId)) throw new IllegalArgumentException("No puedes retarte a ti mismo");
         if (!port.esEstudiante(rivalId)) throw new IllegalArgumentException("Ese compañero no existe");
-        List<Long> ids = banco.preguntasAlAzar(tema, PREGUNTAS).stream().map(PreguntaQuiz::id).toList();
-        if (ids.size() < MIN_PREGUNTAS) throw new IllegalArgumentException("Todavía no hay suficientes preguntas de ese tema");
-        Long id = port.crear(yo, rivalId, tema, ids, LocalDateTime.now(clock));
+        List<PreguntaQuiz> elegidas = banco.preguntasAlAzar(tema, modo.preguntas());
+        if (elegidas.size() < MIN_PREGUNTAS) throw new IllegalArgumentException("Todavía no hay suficientes preguntas de ese tema");
+        List<Long> ids = elegidas.stream().map(PreguntaQuiz::id).toList();
+        Long id = port.crear(yo, rivalId, tema, modo.name(), modo.puntajeMaximo(elegidas), ids, LocalDateTime.now(clock));
         return port.buscar(id, yo).map(d -> vista(d, yo)).orElseThrow(DueloNoEncontradoException::new);
     }
 
@@ -67,24 +73,29 @@ public class DuelosService {
         Long yo = idDe(correo);
         FilaDuelo d = port.buscar(dueloId, yo).orElseThrow(DueloNoEncontradoException::new);
         if (misCorrectas(d, yo) != null) throw new IllegalArgumentException("Ya respondiste este reto");
+        ModoDuelo modo = ModoDuelo.de(d.modo());
         return port.preguntas(dueloId).stream()
-                .map(p -> new PreguntaDueloResponse(p.id(), p.enunciado(),
+                .map(p -> new PreguntaDueloResponse(p.id(), p.enunciado(), modo.valor(p.dificultad()),
                         p.opciones().stream().map(o -> new PreguntaDueloResponse.Opcion(o.letra(), o.texto())).toList()))
                 .toList();
     }
 
     public DueloResponse entregar(String correo, Long dueloId, EntregaDueloRequest entrega) {
         Long yo = idDe(correo);
-        port.buscar(dueloId, yo).orElseThrow(DueloNoEncontradoException::new);
+        FilaDuelo duelo = port.buscar(dueloId, yo).orElseThrow(DueloNoEncontradoException::new);
+        ModoDuelo modo = ModoDuelo.de(duelo.modo());
+        List<PreguntaQuiz> preguntas = port.preguntas(dueloId);
         Map<Long, String> correctas = new HashMap<>();
-        for (PreguntaQuiz p : port.preguntas(dueloId)) {
+        for (PreguntaQuiz p : preguntas) {
             p.opciones().stream().filter(PreguntaQuiz.Opcion::correcta).findFirst()
                     .ifPresent(o -> correctas.put(p.id(), o.letra()));
         }
-        // Cada pregunta cuenta una sola vez, aunque llegue repetida
-        int aciertos = (int) entrega.respuestas().stream()
-                .filter(e -> e.letra() != null && e.letra().equalsIgnoreCase(correctas.get(e.preguntaId())))
-                .map(EntregaDueloRequest.Eleccion::preguntaId).distinct().count();
+        // Una sola respuesta por pregunta (la primera que llegue)
+        Map<Long, String> elegidas = new HashMap<>();
+        for (EntregaDueloRequest.Eleccion e : entrega.respuestas()) {
+            if (e.letra() != null) elegidas.putIfAbsent(e.preguntaId(), e.letra());
+        }
+        int aciertos = modo.calificar(preguntas, elegidas, correctas);
         if (!port.entregar(dueloId, yo, aciertos, entrega.segundos(), LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("Ya respondiste este reto");
         }
@@ -116,7 +127,9 @@ public class DuelosService {
             estado = "TERMINADO";
             resultado = resultado(mias, misSeg, suyas, suyosSeg);
         }
-        return new DueloResponse(d.id(), d.tema(), Tema.nombreDe(d.tema()), soyRetador ? d.rival() : d.retador(),
+        ModoDuelo modo = ModoDuelo.de(d.modo());
+        return new DueloResponse(d.id(), d.tema(), Tema.nombreDe(d.tema()), modo.name(), modo.nombre(), d.puntajeMaximo(),
+                modo.limiteSegundos(), soyRetador ? d.rival() : d.retador(),
                 soyRetador, estado, resultado, mias, misSeg, suyas, suyosSeg, d.totalPreguntas(), d.creadoEn());
     }
 

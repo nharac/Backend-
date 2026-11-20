@@ -25,7 +25,7 @@ public class DueloJdbcAdapter implements DueloPort {
     private static final String ES_ESTUDIANTE = "UPPER(REPLACE(u.rol, 'ROLE_', '')) = 'ESTUDIANTE'";
 
     private static final String SELECT_DUELO = """
-            SELECT d.id, d.tema, d.retador_id, ur.nombre AS retador, d.rival_id, uv.nombre AS rival, d.creado_en,
+            SELECT d.id, d.tema, d.modo, d.puntaje_maximo, d.retador_id, ur.nombre AS retador, d.rival_id, uv.nombre AS rival, d.creado_en,
                    (SELECT COUNT(*) FROM duelo_preguntas dp WHERE dp.duelo_id = d.id) AS total,
                    er.correctas AS correctas_retador, er.segundos AS segundos_retador,
                    ev.correctas AS correctas_rival, ev.segundos AS segundos_rival
@@ -42,9 +42,12 @@ public class DueloJdbcAdapter implements DueloPort {
 
     private static final RowMapper<FilaDuelo> DUELO = (rs, i) -> {
         Timestamp creado = rs.getTimestamp("creado_en");
-        return new FilaDuelo(rs.getLong("id"), rs.getString("tema"), rs.getLong("retador_id"), rs.getString("retador"),
+        int total = rs.getInt("total");
+        Integer maximo = entero(rs, "puntaje_maximo");
+        return new FilaDuelo(rs.getLong("id"), rs.getString("tema"), rs.getString("modo") == null ? "CLASICO" : rs.getString("modo"),
+                maximo == null ? total : maximo, rs.getLong("retador_id"), rs.getString("retador"),
                 rs.getLong("rival_id"), rs.getString("rival"), creado == null ? null : creado.toLocalDateTime(),
-                rs.getInt("total"), entero(rs, "correctas_retador"), entero(rs, "segundos_retador"),
+                total, entero(rs, "correctas_retador"), entero(rs, "segundos_retador"),
                 entero(rs, "correctas_rival"), entero(rs, "segundos_rival"));
     };
 
@@ -76,10 +79,11 @@ public class DueloJdbcAdapter implements DueloPort {
 
     @Override
     @Transactional
-    public Long crear(Long retadorId, Long rivalId, String tema, List<Long> preguntaIds, LocalDateTime creadoEn) {
+    public Long crear(Long retadorId, Long rivalId, String tema, String modo, int puntajeMaximo, List<Long> preguntaIds,
+                      LocalDateTime creadoEn) {
         Long id = jdbc.queryForObject("""
-                INSERT INTO duelos (retador_id, rival_id, tema, creado_en) VALUES (?, ?, ?, ?) RETURNING id
-                """, Long.class, retadorId, rivalId, tema, Timestamp.valueOf(creadoEn));
+                INSERT INTO duelos (retador_id, rival_id, tema, modo, puntaje_maximo, creado_en) VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+                """, Long.class, retadorId, rivalId, tema, modo, puntajeMaximo, Timestamp.valueOf(creadoEn));
         List<Object[]> filas = new ArrayList<>();
         for (int i = 0; i < preguntaIds.size(); i++) {
             filas.add(new Object[]{id, i + 1, preguntaIds.get(i)});

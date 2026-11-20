@@ -10,7 +10,7 @@ import java.util.Optional;
 public interface DueloPort {
 
     /** Un reto con las entregas de los dos (null si aún no responde). */
-    record FilaDuelo(Long id, String tema, Long retadorId, String retador, Long rivalId, String rival,
+    record FilaDuelo(Long id, String tema, String modo, int puntajeMaximo, Long retadorId, String retador, Long rivalId, String rival,
                      LocalDateTime creadoEn, int totalPreguntas,
                      Integer correctasRetador, Integer segundosRetador,
                      Integer correctasRival, Integer segundosRival) {}
@@ -21,7 +21,7 @@ public interface DueloPort {
 
     List<CompaneroResponse> companeros(Long usuarioId);
 
-    Long crear(Long retadorId, Long rivalId, String tema, List<Long> preguntaIds, LocalDateTime creadoEn);
+    Long crear(Long retadorId, Long rivalId, String tema, String modo, int puntajeMaximo, List<Long> preguntaIds, LocalDateTime creadoEn);
 
     List<FilaDuelo> duelosDe(Long usuarioId, int limite);
 
