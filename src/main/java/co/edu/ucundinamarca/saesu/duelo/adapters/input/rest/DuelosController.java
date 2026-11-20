@@ -5,7 +5,9 @@ import co.edu.ucundinamarca.saesu.duelo.application.dto.request.RetarRequest;
 import co.edu.ucundinamarca.saesu.duelo.application.dto.response.CompaneroResponse;
 import co.edu.ucundinamarca.saesu.duelo.application.dto.response.DueloResponse;
 import co.edu.ucundinamarca.saesu.duelo.application.dto.response.PreguntaDueloResponse;
+import co.edu.ucundinamarca.saesu.duelo.application.dto.response.TorneoResponse;
 import co.edu.ucundinamarca.saesu.duelo.application.service.DuelosService;
+import co.edu.ucundinamarca.saesu.duelo.application.service.TorneoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,9 +29,17 @@ import java.util.List;
 public class DuelosController {
 
     private final DuelosService duelos;
+    private final TorneoService torneo;
 
-    public DuelosController(DuelosService duelos) {
+    public DuelosController(DuelosService duelos, TorneoService torneo) {
         this.duelos = duelos;
+        this.torneo = torneo;
+    }
+
+    @Operation(summary = "Torneo de la semana", description = "Tabla de lunes a domingo: 3 puntos por reto ganado y 1 por empate.")
+    @GetMapping("/torneo")
+    public TorneoResponse torneo(Authentication auth) {
+        return torneo.semanaActual(auth.getName());
     }
 
     @Operation(summary = "Compañeros a los que puedo retar")

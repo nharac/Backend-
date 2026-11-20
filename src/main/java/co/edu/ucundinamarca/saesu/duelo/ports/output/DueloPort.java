@@ -25,6 +25,9 @@ public interface DueloPort {
 
     List<FilaDuelo> duelosDe(Long usuarioId, int limite);
 
+    /** Retos que ya jugaron los dos, creados en [desde, hasta). */
+    List<FilaDuelo> terminadosEntre(LocalDateTime desde, LocalDateTime hasta);
+
     /** El reto si el usuario participa en él. */
     Optional<FilaDuelo> buscar(Long dueloId, Long usuarioId);
 

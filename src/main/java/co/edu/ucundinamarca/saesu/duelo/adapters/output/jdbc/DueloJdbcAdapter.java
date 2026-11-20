@@ -99,6 +99,13 @@ public class DueloJdbcAdapter implements DueloPort {
     }
 
     @Override
+    public List<FilaDuelo> terminadosEntre(LocalDateTime desde, LocalDateTime hasta) {
+        return jdbc.query(SELECT_DUELO + " WHERE er.duelo_id IS NOT NULL AND ev.duelo_id IS NOT NULL"
+                        + " AND d.creado_en >= ? AND d.creado_en < ? ORDER BY d.creado_en",
+                DUELO, Timestamp.valueOf(desde), Timestamp.valueOf(hasta));
+    }
+
+    @Override
     public Optional<FilaDuelo> buscar(Long dueloId, Long usuarioId) {
         return jdbc.query(SELECT_DUELO + " WHERE d.id = ? AND (d.retador_id = ? OR d.rival_id = ?)",
                 DUELO, dueloId, usuarioId, usuarioId).stream().findFirst();
