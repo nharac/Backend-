@@ -7,7 +7,7 @@
 #   EC2_USER      usuario SSH (por ejemplo ubuntu o ec2-user)
 #   EC2_SSH_KEY   contenido completo de la llave privada .pem
 #   EC2_RUTA_BACKEND  carpeta del backend en el servidor (por ejemplo /home/ubuntu/Backend-)
-# El .env NO va en GitHub: debe existir ya en esa carpeta del servidor.
+# El .env NO va en GitHub: debe existir ya en el servidor (en despliegue/.env con la arquitectura del anexo).
 name: CD backend
 
 on:
@@ -45,9 +45,10 @@ jobs:
             git fetch origin main
             git checkout main
             git reset --hard origin/main
-            docker compose up -d --build
+            # Arquitectura del anexo (despliegue/compose.yaml: NGINX + 2 backends + PostgreSQL + frontend)
+            # si ya se configuró despliegue/.env en el servidor; si no, el contenedor único de antes.
+            if [ -f despliegue/.env ]; then cd despliegue; docker compose up -d --build backend1 backend2 nginx; URL=http://localhost/api/instancia; else docker compose up -d --build; URL=http://localhost:8080/actuator/health; fi
             docker image prune -f
-            # En la t3.micro Spring Boot tarda de 30 s a 2 min en arrancar: se reintenta hasta 4 minutos.
-            # /actuator/health exige sesión (403): 200/401/403 = Spring Boot ya atiende; 000 = aún no abre el puerto.
-            # Va en una sola línea porque ssh-action (script_stop) agrega código al final de cada línea.
-            for i in $(seq 1 48); do c=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true); if [ "$c" = 200 ] || [ "$c" = 401 ] || [ "$c" = 403 ]; then echo "Backend arriba (HTTP $c)"; exit 0; fi; echo "Esperando a que arranque el backend ($i/48, HTTP $c)..."; sleep 5; done; echo "El backend no respondió en 4 minutos"; docker logs --tail 40 saesu-backend; exit 1
+            # Spring Boot tarda de 30 s a 2 min en arrancar: se reintenta hasta 4 minutos.
+            # 200/401/403 = ya atiende; 000/502 = todavía no. Va en una línea (ssh-action agrega código a cada línea).
+            for i in $(seq 1 48); do c=$(curl -s -o /dev/null -w '%{http_code}' "$URL" || true); if [ "$c" = 200 ] || [ "$c" = 401 ] || [ "$c" = 403 ]; then echo "Backend arriba (HTTP $c)"; exit 0; fi; echo "Esperando a que arranque el backend ($i/48, HTTP $c)..."; sleep 5; done; echo "El backend no respondió en 4 minutos"; docker ps -a; exit 1

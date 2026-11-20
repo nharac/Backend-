@@ -4,11 +4,10 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching; // <-- coffe
-import org.springframework.scheduling.annotation.EnableScheduling; 
 
 @SpringBootApplication
 @EnableCaching // <-- esto es para habilitar la caché en Spring Boot
-@EnableScheduling // <-- esto es para habilitar la programación de tareas en Spring Boot
+// Las tareas programadas se activan en core/config/TareasProgramadasConfig (se pueden apagar por réplica)
 
 public class SaesuBackendApplication {
 

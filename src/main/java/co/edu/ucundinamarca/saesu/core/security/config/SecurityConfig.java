@@ -41,6 +41,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/registro", "/api/auth/login",
                         "/api/auth/recuperar", "/api/auth/recuperar/validar", "/api/auth/restablecer",
                         "/api/auth/verificar-correo", "/api/auth/reenviar-verificacion").permitAll()
+                // Qué réplica del backend respondió (prueba del balanceo NGINX)
+                .requestMatchers("/api/instancia").permitAll()
                 .requestMatchers(
                         "/swagger-ui/**",
                         "/swagger-ui.html",

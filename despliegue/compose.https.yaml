@@ -1,0 +1,11 @@
+# HTTPS para el entorno cloud (certificado de Let's Encrypt ya creado en el servidor).
+#   docker compose -f compose.yaml -f compose.https.yaml up -d
+# o en el .env:  COMPOSE_FILE=compose.yaml:compose.https.yaml
+services:
+  nginx:
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/balanceador-https.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
