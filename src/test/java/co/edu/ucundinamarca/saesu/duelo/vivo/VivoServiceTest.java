@@ -130,7 +130,7 @@ class VivoServiceTest {
         when(port.idPorCorreo("beto")).thenReturn(Optional.of(2L));
         Sala esperando = new Sala(9L, "ABC123", 1L, "Ana", null, null, "algebra", "ESPERANDO", 20, null, 3);
         when(port.buscar("ABC123")).thenReturn(Optional.of(esperando), Optional.of(jugando()));
-        when(port.unir(9L, 2L, INICIO.plusSeconds(5))).thenReturn(true);
+        when(port.unir(9L, 2L, INICIO)).thenReturn(true); // ahora + 5 s de cuenta regresiva
         when(port.respuestas(anyLong())).thenReturn(List.of());
 
         EstadoSala e = en(INICIO.plusSeconds(-5)).unirse("beto", "ABC123");

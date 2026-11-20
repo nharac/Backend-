@@ -199,7 +199,7 @@ class EstadisticasDocenteServiceTest {
         assertThat(csv).startsWith("﻿");
         assertThat(lineas[0]).isEqualTo("Nombre;Correo;Puntos;Racha (días);Intentos;Aciertos (%);"
                 + "Fundamentos (%);Álgebra (%);Trigonometría (%);"
-                + "Límites (%);Derivadas (%);Integrales (%);Última actividad;Estado;Motivo");
+                + "Límites (%);Derivadas (%);Integrales (%);Álgebra lineal (%);Última actividad;Estado;Motivo");
         assertThat(lineas[1]).isEqualTo("Laura Gómez;1@u.edu.co;100;2;4;75,0;;;;75,0;;;26/10/2026 08:00;Al día;");
     }
 
