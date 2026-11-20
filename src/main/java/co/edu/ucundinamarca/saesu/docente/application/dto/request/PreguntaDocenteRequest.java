@@ -17,7 +17,7 @@ public record PreguntaDocenteRequest(
 
         @NotBlank(message = "El tema es obligatorio")
         @Pattern(regexp = Tema.PATRON,
-                message = "El tema debe ser: fundamentos, algebra, trigonometria, limites, derivadas o integrales")
+                message = "El tema debe ser: fundamentos, algebra, trigonometria, limites, derivadas, integrales o algebra_lineal")
         String tema,
 
         @NotBlank(message = "El enunciado es obligatorio")

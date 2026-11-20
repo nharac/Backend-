@@ -19,6 +19,9 @@ public class ProgresoResponse {
     private ProgresoTema limites;
     private ProgresoTema derivadas;
     private ProgresoTema integrales;
+    /** En JSON va como "algebra_lineal", igual que el id del tema. */
+    @com.fasterxml.jackson.annotation.JsonProperty("algebra_lineal")
+    private ProgresoTema algebraLineal;
 
     @Getter
     @Setter

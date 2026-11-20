@@ -34,6 +34,7 @@ public class ObtenerProgresoService implements ObtenerProgresoUseCase {
         ProgresoTema limites = new ProgresoTema(0, 0, 0.0);
         ProgresoTema derivadas = new ProgresoTema(0, 0, 0.0);
         ProgresoTema integrales = new ProgresoTema(0, 0, 0.0);
+        ProgresoTema algebraLineal = new ProgresoTema(0, 0, 0.0);
 
         for (Object[] fila : resultados) {
             String tema = (String) fila[0];
@@ -50,9 +51,11 @@ public class ObtenerProgresoService implements ObtenerProgresoUseCase {
                 case "limites" -> limites = progreso;
                 case "derivadas" -> derivadas = progreso;
                 case "integrales" -> integrales = progreso;
+                case "algebra_lineal" -> algebraLineal = progreso;
+                default -> { /* tema desconocido: se ignora */ }
             }
         }
 
-        return new ProgresoResponse(fundamentos, algebra, trigonometria, limites, derivadas, integrales);
+        return new ProgresoResponse(fundamentos, algebra, trigonometria, limites, derivadas, integrales, algebraLineal);
     }
 }

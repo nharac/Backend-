@@ -73,7 +73,7 @@ public class BancoPreguntasJdbcAdapter implements BancoPreguntasPort {
         }
         sql.append("""
                  GROUP BY p.id
-                 ORDER BY array_position(ARRAY['fundamentos', 'algebra', 'trigonometria', 'limites', 'derivadas', 'integrales'], p.tema::text),
+                 ORDER BY array_position(ARRAY['fundamentos', 'algebra', 'trigonometria', 'limites', 'derivadas', 'integrales', 'algebra_lineal'], p.tema::text),
                           CASE p.dificultad WHEN 'basico' THEN 1 WHEN 'intermedio' THEN 2 ELSE 3 END, p.id
                 """);
 

@@ -17,10 +17,11 @@ public enum Tema {
     TRIGONOMETRIA("trigonometria", "Trigonometría"),
     LIMITES("limites", "Límites"),
     DERIVADAS("derivadas", "Derivadas"),
-    INTEGRALES("integrales", "Integrales");
+    INTEGRALES("integrales", "Integrales"),
+    ALGEBRA_LINEAL("algebra_lineal", "Álgebra lineal");
 
     /** Expresión regular con todos los temas válidos, para validar peticiones. */
-    public static final String PATRON = "fundamentos|algebra|trigonometria|limites|derivadas|integrales";
+    public static final String PATRON = "fundamentos|algebra|trigonometria|limites|derivadas|integrales|algebra_lineal";
 
     private final String valor;
     private final String nombre;

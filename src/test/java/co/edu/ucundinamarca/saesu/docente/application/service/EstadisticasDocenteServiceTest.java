@@ -146,7 +146,7 @@ class EstadisticasDocenteServiceTest {
         assertThat(laura.porcentaje()).isEqualTo(80.0);
         assertThat(laura.enRiesgo()).isFalse();
         assertThat(laura.porTema()).extracting(EstudianteResumenResponse.TemaProgreso::tema)
-                .containsExactly("fundamentos", "algebra", "trigonometria", "limites", "derivadas", "integrales");
+                .containsExactly("fundamentos", "algebra", "trigonometria", "limites", "derivadas", "integrales", "algebra_lineal");
         assertThat(laura.porTema().get(3).resueltas()).isEqualTo(7);
         assertThat(laura.porTema().get(5).totalPreguntas()).isEqualTo(14);
         assertThat(laura.porTema().get(4).intentos()).isZero();

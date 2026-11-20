@@ -182,7 +182,7 @@ public class QuizService implements QuizUseCase {
         }
         String t = tema.trim().toLowerCase(Locale.ROOT);
         if (!TEMAS.contains(t)) {
-            throw new IllegalArgumentException("El tema debe ser fundamentos, algebra, trigonometria, limites, derivadas, integrales o mixto");
+            throw new IllegalArgumentException("El tema debe ser fundamentos, algebra, trigonometria, limites, derivadas, integrales, algebra_lineal o mixto");
         }
         return t;
     }
