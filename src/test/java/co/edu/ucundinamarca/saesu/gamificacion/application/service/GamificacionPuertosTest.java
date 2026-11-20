@@ -41,7 +41,7 @@ class GamificacionPuertosTest {
     }
 
     @Test
-    @DisplayName("Logros: busca el id por correo y lista los 43 logros ganables")
+    @DisplayName("Logros: busca el id por correo y lista los 49 logros ganables")
     void logrosPorCorreo() {
         Usuario laura = mock(Usuario.class);
         when(laura.getId()).thenReturn(7L);
@@ -52,7 +52,7 @@ class GamificacionPuertosTest {
 
         LogrosService service = new LogrosService(logrosPort, usuarios, "");
 
-        assertThat(service.listar("laura@ucundinamarca.edu.co")).hasSize(43);
+        assertThat(service.listar("laura@ucundinamarca.edu.co")).hasSize(49);
         verify(logrosPort).estadisticas(7L);
     }
 
