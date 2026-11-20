@@ -105,6 +105,9 @@ class EnviarMensajeChatServiceTest {
         verify(ia).generarRespuesta(sistema.capture(), eq(""), eq("No sé cómo empezar"));
         assertThat(sistema.getValue())
                 .contains("NUNCA des la respuesta final")
+                .contains("Solo respondes preguntas de matemáticas")
+                .contains("español sencillo")
+                .contains("álgebra, trigonometría")
                 .contains("- Tema: derivadas")
                 .contains("- Enunciado: Derive f(x) = x³")
                 .contains("- Pista disponible: Usa la regla de la potencia");
