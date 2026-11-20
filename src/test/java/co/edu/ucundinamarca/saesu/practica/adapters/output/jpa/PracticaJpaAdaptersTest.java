@@ -107,6 +107,9 @@ class PracticaJpaAdaptersTest {
         when(repo.paraSesion("derivadas", null, 4L, 10, "America/Bogota")).thenReturn(List.of(e));
         assertThat(adapter.paraSesion("derivadas", null, 4L, 10)).singleElement()
                 .extracting(Pregunta::getId).isEqualTo(7L);
+        when(repo.porRepasar(4L, 20)).thenReturn(List.of(e));
+        assertThat(adapter.porRepasar(4L, 20)).singleElement()
+                .extracting(Pregunta::getId).isEqualTo(7L);
 
         Pregunta sinFecha = new Pregunta(null, Tema.LIMITES, "lim", Dificultad.BASICO, null, null, null);
         assertThat(adapter.guardar(sinFecha).getFechaCreacion()).isNotNull();

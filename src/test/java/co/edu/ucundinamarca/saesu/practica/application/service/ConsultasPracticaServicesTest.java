@@ -79,6 +79,22 @@ class ConsultasPracticaServicesTest {
     }
 
     @Test
+    @DisplayName("Repaso de errores: las preguntas falladas del usuario, con un tamaño entre 1 y 50")
+    void repasoDeErrores() {
+        when(usuarioConsulta.obtenerIdPorCorreo("ana@u.edu.co")).thenReturn(4L);
+        when(preguntas.porRepasar(eq(4L), org.mockito.ArgumentMatchers.anyInt()))
+                .thenReturn(List.of(pregunta(9L, "Factoriza")));
+        when(opciones.listarPorPreguntaId(9L)).thenReturn(List.of(new Opcion(1L, 9L, "A", "2", true)));
+        ListarPreguntasService servicio = new ListarPreguntasService(preguntas, opciones, usuarioConsulta);
+
+        assertThat(servicio.porRepasar("ana@u.edu.co", 20)).singleElement()
+                .extracting(PreguntaResponse::getId).isEqualTo(9L);
+        servicio.porRepasar("ana@u.edu.co", 999);
+        org.mockito.Mockito.verify(preguntas).porRepasar(4L, 20);
+        org.mockito.Mockito.verify(preguntas).porRepasar(4L, ListarPreguntasService.MAX_SESION);
+    }
+
+    @Test
     @DisplayName("Contar preguntas delega al puerto")
     void contar() {
         when(preguntas.contar("derivadas", null)).thenReturn(15L);

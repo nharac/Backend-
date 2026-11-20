@@ -65,4 +65,23 @@ public interface PreguntaJpaRepository extends JpaRepository<PreguntaEntity, Lon
             @Param("size") int size,
             @Param("zona") String zona
     );
+
+    /**
+     * Preguntas activas cuyo último intento del estudiante fue un error (las que tiene por repasar),
+     * de la más reciente a la más antigua.
+     */
+    @Query(value = """
+        SELECT p.* FROM preguntas p
+        JOIN LATERAL (
+            SELECT r.es_correcta, r.fecha_intento
+            FROM respuestas_estudiante r
+            WHERE r.pregunta_id = p.id AND r.usuario_id = :usuarioId
+            ORDER BY r.fecha_intento DESC, r.id DESC
+            LIMIT 1
+        ) ultimo ON TRUE
+        WHERE p.activa AND NOT ultimo.es_correcta
+        ORDER BY ultimo.fecha_intento DESC
+        LIMIT :size
+        """, nativeQuery = true)
+    List<PreguntaEntity> porRepasar(@Param("usuarioId") Long usuarioId, @Param("size") int size);
 }

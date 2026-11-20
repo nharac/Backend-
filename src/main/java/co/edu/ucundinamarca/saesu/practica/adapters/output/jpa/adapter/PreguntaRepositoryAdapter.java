@@ -50,6 +50,13 @@ public class PreguntaRepositoryAdapter implements PreguntaRepositoryPort {
     }
 
     @Override
+    public List<Pregunta> porRepasar(Long usuarioId, int size) {
+        return jpaRepository.porRepasar(usuarioId, size).stream()
+                .map(mapper::toDominio)
+                .toList();
+    }
+
+    @Override
     public Optional<Pregunta> buscarPorId(Long id) {
         return jpaRepository.findById(id).map(mapper::toDominio);
     }

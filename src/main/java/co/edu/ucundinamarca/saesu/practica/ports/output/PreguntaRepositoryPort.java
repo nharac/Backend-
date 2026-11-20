@@ -32,6 +32,9 @@ public interface PreguntaRepositoryPort {
      */
     Optional<Pregunta> buscarPorId(Long id);
 
+    /** Preguntas que el estudiante falló en su último intento (para repasar sus errores). */
+    List<Pregunta> porRepasar(Long usuarioId, int size);
+
     /**
      * Guarda una pregunta (con sus opciones).
      */

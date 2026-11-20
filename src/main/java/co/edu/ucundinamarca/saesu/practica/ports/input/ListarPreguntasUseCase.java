@@ -31,4 +31,7 @@ public interface ListarPreguntasUseCase {
      * Primero las que no ha visto hoy, luego las que no ha resuelto. No usa caché.
      */
     List<PreguntaResponse> sesion(String tema, String dificultad, int size, String correo);
+
+    /** Preguntas que el estudiante falló la última vez que las respondió. */
+    List<PreguntaResponse> porRepasar(String correo, int size);
 }

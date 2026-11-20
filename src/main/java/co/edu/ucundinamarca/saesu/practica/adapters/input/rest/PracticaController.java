@@ -75,6 +75,19 @@ public class PracticaController {
     }
 
     @Operation(
+            summary = "Repaso de errores",
+            description = "Preguntas que el estudiante falló en su último intento, de la más reciente a la más antigua. "
+                    + "Al acertarlas salen de la lista. Requiere JWT."
+    )
+    @GetMapping("/preguntas/repaso")
+    public ResponseEntity<List<PreguntaResponse>> repaso(
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(listarPreguntasUseCase.porRepasar(authentication.getName(), size));
+    }
+
+    @Operation(
             summary = "Responder pregunta",
             description = "Valida la opción seleccionada. Si acierta, habilita 'Siguiente'. Si falla, devuelve pista y activa chat IA. Requiere JWT."
     )

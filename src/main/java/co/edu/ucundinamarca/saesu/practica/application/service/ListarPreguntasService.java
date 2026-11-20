@@ -51,6 +51,15 @@ public class ListarPreguntasService implements ListarPreguntasUseCase {
     }
 
     @Override
+    public List<PreguntaResponse> porRepasar(String correo, int size) {
+        int cuantas = Math.max(1, Math.min(size, MAX_SESION));
+        Long usuarioId = usuarioConsulta.obtenerIdPorCorreo(correo);
+        return preguntaRepository.porRepasar(usuarioId, cuantas).stream()
+                .map(this::convertirADto)
+                .toList();
+    }
+
+    @Override
     @Cacheable(value = "contadorPreguntas", key = "#tema + '-' + #dificultad")
     public long contar(String tema, String dificultad) {
         return preguntaRepository.contar(tema, dificultad);
