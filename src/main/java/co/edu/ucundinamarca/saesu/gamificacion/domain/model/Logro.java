@@ -33,6 +33,12 @@ public enum Logro {
     DOMINIO_LIMITES("Dominio de Límites", "Acertar todas las preguntas de límites", "trending_flat", TEMAS, EPICO, Cifra.RESUELTAS_LIMITES, 0),
     DOMINIO_DERIVADAS("Dominio de Derivadas", "Acertar todas las preguntas de derivadas", "show_chart", TEMAS, EPICO, Cifra.RESUELTAS_DERIVADAS, 0),
     DOMINIO_INTEGRALES("Dominio de Integrales", "Acertar todas las preguntas de integrales", "functions", TEMAS, EPICO, Cifra.RESUELTAS_INTEGRALES, 0),
+    BASES_SOLIDAS("Bases sólidas", "10 preguntas de fundamentos resueltas", "calculate", TEMAS, COMUN, Cifra.RESUELTAS_FUNDAMENTOS, 10),
+    APRENDIZ_ALGEBRA("Aprendiz de Álgebra", "10 preguntas de álgebra resueltas", "exposure", TEMAS, COMUN, Cifra.RESUELTAS_ALGEBRA, 10),
+    APRENDIZ_TRIGONOMETRIA("Aprendiz de Trigonometría", "10 preguntas de trigonometría resueltas", "change_history", TEMAS, COMUN, Cifra.RESUELTAS_TRIGONOMETRIA, 10),
+    MAESTRO_FUNDAMENTOS("Maestro de los Fundamentos", "Acertar todas las preguntas de fundamentos", "calculate", TEMAS, EPICO, Cifra.RESUELTAS_FUNDAMENTOS, 0),
+    MAESTRO_ALGEBRA("Maestro del Álgebra", "Acertar todas las preguntas de álgebra", "exposure", TEMAS, EPICO, Cifra.RESUELTAS_ALGEBRA, 0),
+    REY_CIRCULO_UNITARIO("Rey del Círculo Unitario", "Acertar todas las preguntas de trigonometría", "change_history", TEMAS, EPICO, Cifra.RESUELTAS_TRIGONOMETRIA, 0),
 
     // ---------------- Rachas ----------------
     RACHA_3("En llamas", "Racha de 3 días", "local_fire_department", RACHAS, COMUN, Cifra.RACHA, 3),

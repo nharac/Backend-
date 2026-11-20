@@ -67,13 +67,13 @@ class LogrosServiceTest {
     }
 
     @Test
-    @DisplayName("El catálogo tiene 44 logros, 12 retos especiales, uno exclusivo y nombres únicos")
+    @DisplayName("El catálogo tiene 50 logros, 12 retos especiales, uno exclusivo y nombres únicos")
     void catalogo() {
-        assertThat(Logro.values()).hasSize(44);
-        assertThat(LogrosService.GANABLES).hasSize(43);
+        assertThat(Logro.values()).hasSize(50);
+        assertThat(LogrosService.GANABLES).hasSize(49);
         assertThat(Arrays.stream(Logro.values()).filter(l -> l.getCategoria() == CategoriaLogro.RETOS)).hasSize(12);
         assertThat(Arrays.stream(Logro.values()).filter(Logro::esExclusivo)).containsExactly(Logro.DESARROLLADOR);
-        assertThat(new HashSet<>(Arrays.stream(Logro.values()).map(Logro::getNombre).toList())).hasSize(44);
+        assertThat(new HashSet<>(Arrays.stream(Logro.values()).map(Logro::getNombre).toList())).hasSize(50);
         // Los códigos de la primera versión siguen existiendo (ya están guardados en usuario_logros)
         assertThat(Arrays.stream(Logro.values()).map(Logro::name)).contains(
                 "PRIMER_ACIERTO", "A_LA_PRIMERA", "DOMINIO_LIMITES", "DOMINIO_DERIVADAS", "DOMINIO_INTEGRALES",
@@ -229,7 +229,7 @@ class LogrosServiceTest {
     @DisplayName("Desarrollador: solo los correos configurados (sin importar mayúsculas) y solo ellos lo ven")
     void desarrollador() {
         estudiante(new HashMap<>());
-        assertThat(servicio.listar(U)).extracting(LogroResponse::getCodigo).doesNotContain("DESARROLLADOR").hasSize(43);
+        assertThat(servicio.listar(U)).extracting(LogroResponse::getCodigo).doesNotContain("DESARROLLADOR").hasSize(49);
         verify(repo, never()).guardar(U, "DESARROLLADOR");
 
         correo = DEV;
@@ -237,7 +237,7 @@ class LogrosServiceTest {
         LogroResponse dev = buscar(todos, "DESARROLLADOR");
         assertThat(dev.isObtenido()).isTrue();
         assertThat(dev.getRareza()).isEqualTo("EXCLUSIVO");
-        assertThat(todos).hasSize(44);
+        assertThat(todos).hasSize(50);
         assertThat(buscar(todos, "COLECCIONISTA").getProgreso()).as("el exclusivo no cuenta").isZero();
     }
 
@@ -248,6 +248,19 @@ class LogrosServiceTest {
         correo = DEV;
         estudiante(new HashMap<>());
         assertThat(nuevos()).doesNotContain("DESARROLLADOR");
+    }
+
+    @Test
+    @DisplayName("Temas nuevos: aprendiz con 10 resueltas y maestro al acertar todas las del tema")
+    void temasNuevos() {
+        estudiante(new HashMap<>());
+        temas.put("fundamentos", new long[]{40, 40});
+        temas.put("algebra", new long[]{40, 12});
+        temas.put("trigonometria", new long[]{40, 3});
+
+        assertThat(nuevos()).contains("BASES_SOLIDAS", "MAESTRO_FUNDAMENTOS", "APRENDIZ_ALGEBRA")
+                .doesNotContain("MAESTRO_ALGEBRA", "APRENDIZ_TRIGONOMETRIA", "REY_CIRCULO_UNITARIO");
+        assertThat(buscar(servicio.listar(U), "REY_CIRCULO_UNITARIO").getMeta()).isEqualTo(40);
     }
 
     @Test
@@ -275,7 +288,7 @@ class LogrosServiceTest {
 
         List<LogroResponse> todos = servicio.listar(U);
 
-        assertThat(todos).hasSize(43);
+        assertThat(todos).hasSize(49);
         LogroResponse cien = buscar(todos, "ACIERTOS_100");
         assertThat(cien.isObtenido()).isFalse();
         assertThat(cien.getProgreso()).isEqualTo(60);
@@ -289,7 +302,7 @@ class LogrosServiceTest {
         assertThat(buscar(todos, "CURIOSO").isObtenido()).isTrue();
         assertThat(buscar(todos, "CURIOSO").getProgreso()).isEqualTo(1);
         assertThat(buscar(todos, "COLECCIONISTA").getProgreso()).as("Curioso + los 2 de 60 aciertos").isEqualTo(3);
-        assertThat(buscar(todos, "COLECCIONISTA").getMeta()).isEqualTo(42);
+        assertThat(buscar(todos, "COLECCIONISTA").getMeta()).isEqualTo(48);
         verify(repo, times(1)).estadisticas(U);
     }
 

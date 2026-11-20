@@ -149,7 +149,8 @@ public class LogrosService implements LogrosUseCase {
     /** El valor actual de una cifra, incluidas las que se calculan a partir de otras. */
     private long valor(Cifra cifra, Estadisticas e, int logrosQueTiene) {
         return switch (cifra) {
-            case RESUELTAS_LIMITES, RESUELTAS_DERIVADAS, RESUELTAS_INTEGRALES -> e.resueltasDelTema(temaDe(cifra));
+            case RESUELTAS_FUNDAMENTOS, RESUELTAS_ALGEBRA, RESUELTAS_TRIGONOMETRIA,
+                 RESUELTAS_LIMITES, RESUELTAS_DERIVADAS, RESUELTAS_INTEGRALES -> e.resueltasDelTema(temaDe(cifra));
             case TEMAS_EXPLORADOS -> TEMAS.stream().filter(t -> e.resueltasDelTema(t) > 0).count();
             case TEMAS_DOMINADOS -> TEMAS.stream().filter(t -> domina(e, t)).count();
             case PREGUNTAS_RESUELTAS -> TEMAS.stream().mapToLong(e::resueltasDelTema).sum();
@@ -171,6 +172,9 @@ public class LogrosService implements LogrosUseCase {
 
     private static String temaDe(Cifra cifra) {
         return switch (cifra) {
+            case RESUELTAS_FUNDAMENTOS -> "fundamentos";
+            case RESUELTAS_ALGEBRA -> "algebra";
+            case RESUELTAS_TRIGONOMETRIA -> "trigonometria";
             case RESUELTAS_LIMITES -> "limites";
             case RESUELTAS_DERIVADAS -> "derivadas";
             default -> "integrales";

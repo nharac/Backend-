@@ -39,6 +39,9 @@ public enum Cifra {
     PUNTOS,
 
     // ---- Derivadas (las calcula LogrosService) ----
+    RESUELTAS_FUNDAMENTOS,
+    RESUELTAS_ALGEBRA,
+    RESUELTAS_TRIGONOMETRIA,
     RESUELTAS_LIMITES,
     RESUELTAS_DERIVADAS,
     RESUELTAS_INTEGRALES,
