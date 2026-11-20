@@ -1,5 +1,7 @@
 package co.edu.ucundinamarca.saesu.tarea.application.service;
 
+import co.edu.ucundinamarca.saesu.notificacion.ports.input.NotificarUseCase;
+import org.springframework.beans.factory.annotation.Autowired;
 import co.edu.ucundinamarca.saesu.practica.domain.valueobject.Tema;
 import co.edu.ucundinamarca.saesu.tarea.application.dto.request.TareaRequest;
 import co.edu.ucundinamarca.saesu.tarea.application.dto.response.TareaDocenteResponse;
@@ -25,6 +27,14 @@ import java.util.List;
 @Service
 public class TareasService {
 
+    /** Campanita (opcional: en las pruebas unitarias puede no estar). */
+    private NotificarUseCase avisos;
+
+    @Autowired(required = false)
+    public void setAvisos(NotificarUseCase avisos) {
+        this.avisos = avisos;
+    }
+
     private final TareaPort port;
     private final Clock clock;
 
@@ -44,6 +54,15 @@ public class TareasService {
         Long docenteId = idDe(correoDocente);
         // Misma hora que usa la práctica al guardar cada intento, para comparar las fechas sin desfase.
         Long id = port.crear(tarea, docenteId, LocalDateTime.now());
+        if (avisos != null) {
+            String titulo = "Nueva tarea: " + tarea.titulo().trim();
+            String mensaje = Tema.nombreDe(tarea.tema()) + " · resuelve bien " + tarea.metaPreguntas() + " preguntas antes del " + tarea.fechaLimite();
+            if (tarea.estudianteId() == null) {
+                avisos.notificarEstudiantes("TAREA", titulo, mensaje, "/dashboard");
+            } else {
+                avisos.notificar(tarea.estudianteId(), "TAREA", titulo, mensaje, "/dashboard");
+            }
+        }
         return port.delDocente(docenteId).stream().filter(t -> t.id().equals(id)).findFirst()
                 .map(this::aRespuesta)
                 .orElseThrow(() -> new IllegalStateException("No se encontró la tarea recién creada"));

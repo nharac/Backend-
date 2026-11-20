@@ -1,5 +1,7 @@
 package co.edu.ucundinamarca.saesu.foro.application.service;
 
+import co.edu.ucundinamarca.saesu.notificacion.ports.input.NotificarUseCase;
+import org.springframework.beans.factory.annotation.Autowired;
 import co.edu.ucundinamarca.saesu.core.notificacion.EmailService; // <-- email
 import co.edu.ucundinamarca.saesu.foro.application.dto.request.ResponderPublicacionRequest;
 import co.edu.ucundinamarca.saesu.foro.application.dto.response.AutorResponse;
@@ -31,6 +33,14 @@ import java.util.Collections;
 @Service
 @RequiredArgsConstructor
 public class ResponderPublicacionService implements ResponderPublicacionUseCase {
+
+    /** Campanita (opcional: en las pruebas unitarias puede no estar). */
+    private NotificarUseCase avisos;
+
+    @Autowired(required = false)
+    public void setAvisos(NotificarUseCase avisos) {
+        this.avisos = avisos;
+    }
 
     private final PublicacionRepositoryPort publicacionRepository;
     private final RespuestaRepositoryPort respuestaRepository;
@@ -107,6 +117,12 @@ public class ResponderPublicacionService implements ResponderPublicacionUseCase 
             }
         } catch (Exception e) {
             log.warn("No se pudo enviar el aviso de nueva respuesta de la publicación {}: {}", publicacionId, e.getMessage());
+        }
+
+        // Campanita para el autor de la publicación
+        if (avisos != null && !publicacion.getAutorId().equals(autor.getId())) {
+            avisos.notificar(publicacion.getAutorId(), "FORO", autor.getNombre() + " respondió tu publicación",
+                    publicacion.getTitulo(), "/foro/" + publicacionId);
         }
 
         // PUNTOS POR RESPONDER EN EL FORO: +10, máximo 3 por día y no en publicaciones propias

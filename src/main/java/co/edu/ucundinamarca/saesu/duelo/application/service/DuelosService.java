@@ -1,5 +1,7 @@
 package co.edu.ucundinamarca.saesu.duelo.application.service;
 
+import co.edu.ucundinamarca.saesu.notificacion.ports.input.NotificarUseCase;
+import org.springframework.beans.factory.annotation.Autowired;
 import co.edu.ucundinamarca.saesu.duelo.application.dto.request.EntregaDueloRequest;
 import co.edu.ucundinamarca.saesu.duelo.application.dto.response.CompaneroResponse;
 import co.edu.ucundinamarca.saesu.duelo.application.dto.response.DueloResponse;
@@ -26,6 +28,14 @@ import java.util.Map;
  */
 @Service
 public class DuelosService {
+
+    /** Campanita (opcional: en las pruebas unitarias puede no estar). */
+    private NotificarUseCase avisos;
+
+    @Autowired(required = false)
+    public void setAvisos(NotificarUseCase avisos) {
+        this.avisos = avisos;
+    }
 
     static final int MIN_PREGUNTAS = 3;
     static final int HISTORIAL = 30;
@@ -61,7 +71,12 @@ public class DuelosService {
         if (elegidas.size() < MIN_PREGUNTAS) throw new IllegalArgumentException("Todavía no hay suficientes preguntas de ese tema");
         List<Long> ids = elegidas.stream().map(PreguntaQuiz::id).toList();
         Long id = port.crear(yo, rivalId, tema, modo.name(), modo.puntajeMaximo(elegidas), ids, LocalDateTime.now(clock));
-        return port.buscar(id, yo).map(d -> vista(d, yo)).orElseThrow(DueloNoEncontradoException::new);
+        DueloResponse creado = port.buscar(id, yo).map(d -> vista(d, yo)).orElseThrow(DueloNoEncontradoException::new);
+        if (avisos != null) {
+            String yoNombre = port.buscar(id, yo).map(FilaDuelo::retador).orElse("Un compañero");
+            avisos.notificar(rivalId, "RETO", yoNombre + " te retó", modo.nombre() + " de " + Tema.nombreDe(tema) + ". ¡Acepta el reto!", "/retos");
+        }
+        return creado;
     }
 
     public List<DueloResponse> misDuelos(String correo) {
@@ -99,7 +114,19 @@ public class DuelosService {
         if (!port.entregar(dueloId, yo, aciertos, entrega.segundos(), LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("Ya respondiste este reto");
         }
-        return port.buscar(dueloId, yo).map(d -> vista(d, yo)).orElseThrow(DueloNoEncontradoException::new);
+        DueloResponse r = port.buscar(dueloId, yo).map(d -> vista(d, yo)).orElseThrow(DueloNoEncontradoException::new);
+        if (avisos != null && "TERMINADO".equals(r.estado())) {
+            Long otro = yo.equals(duelo.retadorId()) ? duelo.rivalId() : duelo.retadorId();
+            String nombreYo = yo.equals(duelo.retadorId()) ? duelo.retador() : duelo.rival();
+            String resultadoOtro = switch (r.resultado()) {
+                case "GANASTE" -> "Perdiste";
+                case "PERDISTE" -> "¡Ganaste!";
+                default -> "Empataron";
+            };
+            avisos.notificar(otro, "RETO_RESULTADO", resultadoOtro + " el reto contra " + nombreYo,
+                    "Mira el marcador en Retos.", "/retos");
+        }
+        return r;
     }
 
     // ---------------------------------------------------------------

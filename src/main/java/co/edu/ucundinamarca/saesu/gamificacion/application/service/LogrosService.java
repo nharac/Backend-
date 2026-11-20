@@ -1,5 +1,7 @@
 package co.edu.ucundinamarca.saesu.gamificacion.application.service;
 
+import co.edu.ucundinamarca.saesu.notificacion.ports.input.NotificarUseCase;
+import org.springframework.beans.factory.annotation.Autowired;
 import co.edu.ucundinamarca.saesu.gamificacion.application.dto.response.LogroResponse;
 import co.edu.ucundinamarca.saesu.gamificacion.domain.model.Cifra;
 import co.edu.ucundinamarca.saesu.gamificacion.domain.model.Logro;
@@ -31,6 +33,14 @@ import java.util.stream.Collectors;
  */
 @Service
 public class LogrosService implements LogrosUseCase {
+
+    /** Campanita (opcional: en las pruebas unitarias puede no estar). */
+    private NotificarUseCase avisos;
+
+    @Autowired(required = false)
+    public void setAvisos(NotificarUseCase avisos) {
+        this.avisos = avisos;
+    }
 
     private static final List<String> TEMAS = List.of("limites", "derivadas", "integrales");
     /** Los que se pueden ganar jugando (todos menos los exclusivos). */
@@ -103,7 +113,11 @@ public class LogrosService implements LogrosUseCase {
                 if (!logro.esExclusivo()) {
                     tiene++;
                 }
-                nuevos.add(aRespuesta(logro, e, tiene, OffsetDateTime.now()));
+                LogroResponse nuevo = aRespuesta(logro, e, tiene, OffsetDateTime.now());
+                nuevos.add(nuevo);
+                if (avisos != null) {
+                    avisos.notificar(usuarioId, "LOGRO", "¡Ganaste el logro " + nuevo.getNombre() + "!", "Míralo en tu perfil.", "/perfil");
+                }
             }
         }
         return nuevos;
