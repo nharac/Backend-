@@ -1,8 +1,10 @@
 package co.edu.ucundinamarca.saesu.docente.adapters.input.rest;
 
+import co.edu.ucundinamarca.saesu.docente.application.dto.request.GenerarPreguntasRequest;
 import co.edu.ucundinamarca.saesu.docente.application.dto.request.PreguntaDocenteRequest;
 import co.edu.ucundinamarca.saesu.docente.application.dto.response.PreguntaDocenteResponse;
 import co.edu.ucundinamarca.saesu.docente.application.service.BancoPreguntasService;
+import co.edu.ucundinamarca.saesu.docente.application.service.GenerarPreguntasService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +23,7 @@ import java.util.Map;
 public class DocentePreguntasController {
 
     private final BancoPreguntasService bancoService;
+    private GenerarPreguntasService generador;
 
     public DocentePreguntasController(BancoPreguntasService bancoService) {
         this.bancoService = bancoService;
@@ -63,5 +66,18 @@ public class DocentePreguntasController {
             throw new IllegalArgumentException("Falta el campo 'activa' (true o false)");
         }
         return bancoService.cambiarEstado(id, activa);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setGenerador(GenerarPreguntasService generador) {
+        this.generador = generador;
+    }
+
+    @Operation(summary = "Borradores de preguntas con IA",
+            description = "La IA propone de 1 a 5 preguntas del tema y nivel pedidos. No se guardan: el docente revisa y publica las que quiera.")
+    @PostMapping("/generar")
+    public List<PreguntaDocenteRequest> generar(
+            @Valid @RequestBody GenerarPreguntasRequest request) {
+        return generador.generar(request);
     }
 }
