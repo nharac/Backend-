@@ -68,6 +68,28 @@ public class TareaJdbcAdapter implements TareaPort {
     }
 
     @Override
+    public List<Pendiente> asignacionesQueVencen(LocalDate desde, LocalDate hasta) {
+        return jdbc.query("""
+                SELECT t.id, t.titulo, t.tema, t.meta_preguntas, t.fecha_limite, a.id AS usuario_id, a.correo, a.nombre,
+                       (%s) AS resueltas
+                FROM tareas t
+                JOIN usuarios a ON a.id = t.estudiante_id OR (t.estudiante_id IS NULL AND %s)
+                WHERE t.fecha_limite BETWEEN ? AND ?
+                ORDER BY t.fecha_limite, t.id
+                """.formatted(RESUELTAS.formatted("a.id"), ES_ESTUDIANTE.formatted("a")),
+                (rs, i) -> new Pendiente(rs.getLong("id"), rs.getString("titulo"), rs.getString("tema"), rs.getInt("meta_preguntas"),
+                        dia(rs, "fecha_limite"), rs.getLong("usuario_id"), rs.getString("correo"), rs.getString("nombre"),
+                        rs.getLong("resueltas")),
+                Date.valueOf(desde), Date.valueOf(hasta));
+    }
+
+    @Override
+    public boolean marcarRecordatorio(Long tareaId, Long usuarioId, LocalDate dia) {
+        return jdbc.update("INSERT INTO tarea_recordatorios (tarea_id, usuario_id, dia) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
+                tareaId, usuarioId, Date.valueOf(dia)) > 0;
+    }
+
+    @Override
     public Optional<Long> idPorCorreo(String correo) {
         return jdbc.query("SELECT id FROM usuarios WHERE LOWER(correo) = LOWER(?)", (rs, i) -> rs.getLong("id"), correo)
                 .stream().findFirst();

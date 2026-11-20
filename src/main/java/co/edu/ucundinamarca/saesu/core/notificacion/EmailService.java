@@ -79,6 +79,23 @@ public class EmailService {
                         + parrafo("Entra a SAESU para ver la respuesta."));
     }
 
+    /** Recordatorio de una tarea que vence pronto y aún no está completa. */
+    @Async
+    public void enviarRecordatorioTarea(String destinatario, String nombre, String tituloTarea, String tema,
+                                        int faltan, boolean venceHoy) {
+        String n = primerNombre(nombre);
+        String cuando = venceHoy ? "hoy" : "mañana";
+        String preguntas = faltan == 1 ? "1 pregunta" : faltan + " preguntas";
+        enviar(destinatario, "Tu tarea \"" + tituloTarea + "\" vence " + cuando, "Recordatorio de tarea",
+                "Hola " + n + ",\n\n"
+                        + "Tu tarea \"" + tituloTarea + "\" de " + tema + " vence " + cuando + ".\n"
+                        + "Te faltan " + preguntas + " por resolver bien. Entra a SAESU y practica ese tema.\n\n" + FIRMA,
+                titulo("Hola, " + n)
+                        + parrafo("Tu tarea <b>" + esc(tituloTarea) + "</b> de " + esc(tema) + " vence <b>" + cuando + "</b>.")
+                        + parrafo("Te faltan <b>" + preguntas + "</b> por resolver bien. Entra a SAESU y practica ese tema.")
+                        + parrafo("Entra en: <a href=\"" + esc(urlApp) + "\" style=\"color:" + INDIGO + "\">" + esc(urlApp) + "</a>"));
+    }
+
     @Async
     public void enviarCodigoRecuperacion(String destinatario, String nombre, String codigo, int minutos) {
         enviar(destinatario, "Tu código de SAESU", "Recupera tu contraseña",

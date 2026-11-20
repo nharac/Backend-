@@ -19,6 +19,16 @@ public interface TareaPort {
     record FilaTareaEstudiante(Long id, String titulo, String instrucciones, String tema, int metaPreguntas,
                                LocalDate fechaLimite, String docente, long resueltas) {}
 
+    /** Estudiante con una tarea que vence en {@code dias} y su avance. */
+    record Pendiente(Long tareaId, String titulo, String tema, int metaPreguntas, LocalDate fechaLimite,
+                     Long usuarioId, String correo, String nombre, long resueltas) {}
+
+    /** Tareas que vencen en alguno de esos días, una fila por estudiante asignado. */
+    List<Pendiente> asignacionesQueVencen(LocalDate desde, LocalDate hasta);
+
+    /** Registra que ya se le recordó hoy; false si ya estaba. */
+    boolean marcarRecordatorio(Long tareaId, Long usuarioId, LocalDate dia);
+
     Optional<Long> idPorCorreo(String correo);
 
     boolean esEstudiante(Long usuarioId);
