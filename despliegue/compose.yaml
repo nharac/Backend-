@@ -78,6 +78,9 @@ services:
   backend2:
     <<: *backend
     container_name: saesu-backend2
+    # misma imagen que backend1: no se construye dos veces (evita "image already exists")
+    build: !reset null
+    pull_policy: never
     environment:
       <<: *backend-env
       SAESU_INSTANCIA: backend2
